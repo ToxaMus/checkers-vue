@@ -1,11 +1,12 @@
 <template>
   <div class="cell"
-    :style="{ backgroundColor: cell.color === Color.WHITE ? '#FFFFF0' : '#D3D3D3' }">
-    <FigureComp :cell="cell"></FigureComp>
+    :style="cellStyle">
+       <FigureComp :cell="cell"></FigureComp>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import FigureComp from './figureComp.vue';
 import { Color } from './tsFiles/color'
 import type { Figures } from './tsFiles/figures';
@@ -15,11 +16,17 @@ interface Cell {
   figure: Figures | null
   x:number
   y: number
+  colorBorder: string
 }
 
-defineProps<{
+const props = defineProps<{
   cell: Cell
 }>()
+
+const cellStyle = computed(() => ({
+   backgroundColor: props.cell.color === Color.WHITE ? '#FFFFF0' : '#D3D3D3',
+   borderColor: props.cell.colorBorder
+}))
 </script>
 
 <style scoped>

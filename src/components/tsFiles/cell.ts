@@ -6,12 +6,14 @@ export default class  Cell {
   y: number;
   figure: Figures | null;
   color: Color
+  colorBorder: string = 'black'
 
-  constructor(x: number, y: number, figure: Figures | null, color: Color) {
+  constructor(x: number, y: number, figure: Figures | null, color: Color){
     this.x = x
     this.y = y
-    this.figure = figure
+   this.figure = figure
     this.color = color
+
   }
 
 }

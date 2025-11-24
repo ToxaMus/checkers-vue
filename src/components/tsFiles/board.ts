@@ -28,4 +28,14 @@ export default class Board {
       this.board.push(row);
     }
   }
+
+  public getCell(x: number, y: number): Cell | undefined {
+    if (this.board && x >= 0 && x < this.board.length && this.board[x] && y >= 0 && y < this.board[x].length){
+
+      return this.board[x][y]
+    }
+
+    return undefined
+
+  }
 }
