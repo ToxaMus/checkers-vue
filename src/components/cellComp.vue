@@ -1,7 +1,7 @@
 <template>
   <div class="cell"
     :style="cellStyle">
-       <FigureComp :cell="cell"></FigureComp>
+    <FigureComp :cell="cell"></FigureComp> 
   </div>
 </template>
 
@@ -9,7 +9,7 @@
 import { computed } from 'vue';
 import FigureComp from './figureComp.vue';
 import { Color } from './tsFiles/color'
-import type { Figures } from './tsFiles/figures';
+import Figures from './tsFiles/figures';
 
 interface Cell {
   color: Color
@@ -17,6 +17,7 @@ interface Cell {
   x:number
   y: number
   colorBorder: string
+  colorBackgraund: string
 }
 
 const props = defineProps<{
@@ -24,7 +25,7 @@ const props = defineProps<{
 }>()
 
 const cellStyle = computed(() => ({
-   backgroundColor: props.cell.color === Color.WHITE ? '#FFFFF0' : '#D3D3D3',
+   backgroundColor: props.cell.colorBackgraund,
    borderColor: props.cell.colorBorder
 }))
 </script>

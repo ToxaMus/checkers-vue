@@ -1,4 +1,4 @@
-<template>
+  <template>
   <div id="board">
     <BoardComp :board="board"></BoardComp>
   </div>
@@ -8,10 +8,16 @@
 import { onMounted, ref } from 'vue';
 import Board from './components/tsFiles/board';
 import BoardComp from './components/boardComp.vue';
+import Game from './game/game';
 
 const board = ref(new Board());
 
-onMounted(() => board.value.initBoard());
+onMounted(() => {
+  board.value.initBoard();
+  const game = new Game(board.value); // передаем board.value, а не board
+  game.game();
+});
+
 </script>
 
 <style scoped>

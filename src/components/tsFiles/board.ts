@@ -1,41 +1,41 @@
 import Cell from "./cell";
 import { Color } from "./color";
-import { Figures } from "./figures";
+import Figures from "./figures";
+import Checker from "./typesFigures/checker";
 
 export default class Board {
-  board: Cell[][] = []
+  board: Cell[][] = [];
 
   initBoard() {
-    for (let i = 0; i < 8; i++) {
-      const row: Cell[] = []
+  this.board = [];
 
-      for (let j = 0; j < 8; j++) {
-        let figure = null;
-        // ИГРАЕМ НА ЧЕРНЫХ КЛЕТКАХ - меняем логику
-        const cellColor = (i + j) % 2 === 0 ? Color.WHITE : Color.BLACK;
+  for (let row = 0; row < 8; row++) {
+    const boardRow: Cell[] = [];
+    for (let col = 0; col < 8; col++) {
+      let figure = null;
 
-        // Ставим шашки ТОЛЬКО на черные клетки
-        if (cellColor === Color.BLACK) {
-          if (i < 3) {
-            figure = new Figures('checker', Color.BLACK);  // Компьютер (верх)
-          } else if (i > 4) {
-            figure = new Figures('checker', Color.WHITE);  // Игрок (низ)
-          }
+      // Сразу получаем цвет клетки
+      const cellColor = (row + col) % 2 == 0 ? Color.BLACK : Color.WHITE;
+
+      // Проверяем именно на черный цвет
+      if (cellColor === Color.BLACK) {  // Теперь это сравнение строк
+        if (row < 3) {
+          figure = new Figures(new Checker(this), Color.BLACK);
         }
-
-        row.push(new Cell(i, j, figure, cellColor));
+        else if (row > 4) {
+          figure = new Figures(new Checker(this), Color.WHITE);
+        }
       }
-      this.board.push(row);
+
+      boardRow.push(new Cell(col, row, figure, cellColor));
     }
+    this.board.push(boardRow);
   }
-
+}
   public getCell(x: number, y: number): Cell | undefined {
-    if (this.board && x >= 0 && x < this.board.length && this.board[x] && y >= 0 && y < this.board[x].length){
-
-      return this.board[x][y]
+    if (x >= 0 && x < 8 && y >= 0 && y < 8) {
+      return this.board[y]?.[x]; // Исправлено с [x][y] на [y][x]
     }
-
-    return undefined
-
+    return undefined;
   }
 }
