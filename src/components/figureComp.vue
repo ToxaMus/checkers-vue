@@ -1,80 +1,103 @@
 <template>
   <div
-    v-if="isChecker"
+    v-if="props.cell.figure"
     class="figure"
-    :style="figureStyle"
-    :class="figureClass"
-  ></div>
-  <div
-    v-else-if="isKing"
-    class="figure king"
-    :style="figureStyle"
-    :class="figureClass"
+    :class="figureClasses"
+    :aria-label="figureAriaLabel"
   >
-    W
+    {{ figureSymbol }}
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { Color } from './tsFiles/color';
-import type Figures from './tsFiles/figures';
-import Checker from './tsFiles/typesFigures/checker';
-import King from './tsFiles/typesFigures/king';
-
-interface Cell {
-  color: Color;
-  figure: Figures | null;
-  x: number;
-  y: number;
-}
+import { computed } from "vue";
+import type {Cell} from "./tsFiles/cell";
+import  { Color } from "./tsFiles/color"; // Предполагаем, что Color — enum или тип
 
 const props = defineProps<{
   cell: Cell;
 }>();
 
-const isChecker = computed(() =>
-  props.cell.figure !== null && props.cell.figure.type instanceof Checker);
-
-const isKing = computed(() =>
-  props.cell.figure !== null && props.cell.figure.type instanceof King);
-
-const figureStyle = computed(() => {
-  const color = props.cell.figure?.color;
-  return {
-    backgroundColor: color === Color.WHITE ? '#ffffff' : '#000000',
-    color: color === Color.WHITE ? '#000000' : '#ffffff' // Контрастный цвет текста
-  };
+// Вычисляем классы для фигуры
+const figureClasses = computed(() => {
+  const classes: string[] = [];
+  if (props.cell.figure) {
+    classes.push(props.cell.figure.color);
+    if (props.cell.figure.isKing) {
+      classes.push("king");
+    }
+  }
+  return classes;
 });
 
-const figureClass = computed(() => ({
-  white: props.cell.figure?.color === Color.WHITE,
-  black: props.cell.figure?.color === Color.BLACK
-}));
+// Символ для фигуры
+const figureSymbol = computed(() => {
+  if (!props.cell.figure) return "";
+  if (props.cell.figure.isKing) {
+    return "♛"; // Unicode-символ для дамки (можно заменить на "K" или другой)
+  }
+  return "●"; // Символ для обычной шашки
+});
+
+// ARIA-метка для доступности
+const figureAriaLabel = computed(() => {
+  if (!props.cell.figure) return "";
+  const type = props.cell.figure.isKing ? "дамка" : "шашка";
+  const color = props.cell.figure.color === Color.WHITE ? "белая" : "чёрная";
+  const position = `клетка ${props.cell.x},${props.cell.y}`;
+  return `Фигура: ${color} ${type} (${position})`;
+});
 </script>
 
 <style scoped>
 .figure {
-  width: 32px;
-  height: 32px;
+  --size: 40px;
+  width: 85%;
+  height: 85%;
+  min-width: var(--size);
+  min-height: var(--size);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 2px solid;
   font-weight: bold;
-  border: 1px solid #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  font-size: 1.2rem;
 }
 
-.white {
+.figure:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.figure.white {
+  background: linear-gradient(135deg, #FFFFF0, #F5F5DC);
   border-color: #cccccc;
+  color: #333333;
 }
 
-.black {
+.figure.black {
+  background: linear-gradient(135deg, #D3D3D3, #A9A9A9);
   border-color: #666666;
+  color: #ffffff;
 }
 
-.king {
-  border: 2px solid gold;
-  font-size: 18px;
+.figure.king {
+  border-width: 3px;
+  border-color: gold;
+  font-size: 1.4rem;
+  font-weight: 900;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.figure.king.white {
+  background: linear-gradient(135deg, #FFFFF0, #FFE4B5);
+}
+
+.figure.king.black {
+  background: linear-gradient(135deg, #D3D3D3, #8B7355);
 }
 </style>

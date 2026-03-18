@@ -1,115 +1,123 @@
-import Cell from "@/components/tsFiles/cell";
-import { Color } from "@/components/tsFiles/color";
-import Board from "../board";
+import type { Board } from "../board";
+import type { Cell } from "../cell";
+import { Color } from "../color";
+import { BaseFigure } from "./baseFigure";
 
-export default class Checker {
-  constructor(protected board: Board) {}
-
-  Moves(cell: Cell): { moves: Cell[], enemies: Cell[] } {
-    if (!cell.figure) return { moves: [], enemies: [] };
-
-    const direction = cell.figure.color === Color.WHITE ? -1 : 1;
-
-    const moves = [
-      ...this.findMoves(cell, 1, direction),
-      ...this.findMoves(cell, 1, -direction)
-    ];
-
-    const enemies = this.foundEnemy(moves, cell);
-
-    return this.filterMoves(moves, enemies, cell);
+export class Checker extends BaseFigure {
+  constructor(board: Board, color: Color) {
+    super(board, color);
   }
 
-  filterMoves(moves: Cell[], enem: Cell[], el: Cell): { moves: Cell[], enemies: Cell[] } {
-    if (enem.length === 0) {
-      moves.splice(-2);
-      return {
-        moves: moves.filter(cell => cell.figure == null),
-        enemies: enem
-      };
+  /**
+   * Возвращает возможные ходы и вражеские фигуры, которых можно побить из текущей клетки.
+   * Учитывает правило обязательного взятия: если есть возможность бить, обычные ходы не разрешаются.
+   */
+  public moves(cell: Cell): { moves: Cell[]; enemies: Cell[] } | null {
+    if (!cell.figure || cell.figure !== this) return { moves: [], enemies: [] };
+
+    // Сначала ищем все возможные ходы со взятием
+    const captureMoves = this.findCaptureMoves(cell);
+
+    if (captureMoves.length > 0) {
+      // Если есть возможность бить, разрешаем только такие ходы
+      return { moves: captureMoves, enemies: this.findEnemiesForCapture(cell) };
     }
 
-    const captureMoves = this.foundMovesForEat(enem, el);
-
-    if (captureMoves.length === 0) {
-      // Если нельзя взять врагов, возвращаем обычные ходы вперед
-      moves.splice(-2);
-      return {
-        moves: moves.filter(cell => cell.figure == null),
-        enemies: enem
-      };
-    }
-
-    return {
-      moves: captureMoves,
-      enemies: enem
-    };
+    // Иначе ищем обычные ходы вперёд по диагонали
+    const regularMoves = this.getCellsForMoves(cell);
+    return { moves: regularMoves, enemies: [] };
   }
 
-  isCanEat(arr: Cell[], cell: Cell): boolean {
-    // Проверяем, можно ли съесть хотя бы одну фигуру из массива
-    const newArr = arr.filter(element => element.x !== 8 || element.y !== 8);
-
-    for (const enemy of newArr) {
-      const dx = enemy.x - cell.x;
-      const dy = enemy.y - cell.y;
-      const targetX = enemy.x + dx;
-      const targetY = enemy.y + dy;
-      const targetCell = this.board.getCell(targetX, targetY);
-
-      if (targetCell && targetCell.figure === undefined) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  isFreeCell(mass: Cell[], el: Cell): Cell[] {
-    // Возвращаем свободные клетки вокруг указанной клетки
-    return mass.filter(each => {
-      const dx = Math.abs(each.x - el.x);
-      const dy = Math.abs(each.y - el.y);
-      // Проверяем, что клетка соседняя по диагонали и пустая
-      return dx === 1 && dy === 1 && each.figure === undefined;
-    });
-  }
-
-  foundMovesForEat(enem: Cell[], cell: Cell): Cell[] {
+  /**
+   * Находит все ходы со взятием из текущей клетки.
+   */
+  private findCaptureMoves(cell: Cell): Cell[] {
     const moves: Cell[] = [];
 
-    for (const enemy of enem) {
-      const dx = enemy.x - cell.x;
-      const dy = enemy.y - cell.y;
+    for (const dir of this.DIRECTIONS) {
+      const enemyX = cell.x + dir.x;
+      const enemyY = cell.y + dir.y;
+      const enemyCell = this.board.getCell(enemyX, enemyY);
 
-      const targetX = enemy.x + dx;
-      const targetY = enemy.y + dy;
+      if (
+        enemyCell &&
+        enemyCell.figure &&
+        enemyCell.figure.color !== this.color
+      ) {
+        // Для обычной шашки: прыжок через 1 клетку
+        const jumpX = enemyX + dir.x;
+        const jumpY = enemyY + dir.y;
+        const jumpCell = this.board.getCell(jumpX, jumpY);
 
-      const targetCell = this.board.getCell(targetX, targetY);
-
-      if (targetCell && targetCell.figure === undefined) {
-        moves.push(targetCell);
+        if (jumpCell && jumpCell.isEmpty()) {
+          moves.push(jumpCell);
+        }
       }
     }
 
     return moves;
   }
 
-  foundEnemy(arr: Cell[], element: Cell): Cell[] {
-    return arr.filter(el =>
-      el.figure && el.figure.color !== element.figure?.color
-    );
+  /**
+   * Находит вражеские фигуры, через которых можно побить.
+   */
+  private findEnemiesForCapture(cell: Cell): Cell[] {
+    const enemies: Cell[] = [];
+
+    for (const dir of this.DIRECTIONS) {
+      const enemyX = cell.x + dir.x;
+      const enemyY = cell.y + dir.y;
+      const enemyCell = this.board.getCell(enemyX, enemyY);
+
+      if (
+        enemyCell &&
+        enemyCell.figure &&
+        enemyCell.figure.color !== this.color &&
+        this.canJumpOver(cell, enemyCell)
+      ) {
+        enemies.push(enemyCell);
+      }
+    }
+
+    return enemies;
   }
 
-  findMoves(cell: Cell, dx: number, dy: number): Cell[] {
-    const arrCells: Cell[] = [];
+  /**
+   * Проверяет, можно ли прыгнуть через вражескую фигуру.
+   */
+  private canJumpOver(fromCell: Cell, enemyCell: Cell): boolean {
+    const dx = enemyCell.x - fromCell.x;
+    const dy = enemyCell.y - fromCell.y;
 
-    const newCell1 = this.board.getCell(cell.x + dx, cell.y + dy);
-    const newCell2 = this.board.getCell(cell.x - dx, cell.y + dy);
+    // Движение строго по диагонали на 1 клетку
+    if (Math.abs(dx) !== 1 || Math.abs(dy) !== 1) return false;
 
-    if (newCell1) arrCells.push(newCell1);
-    if (newCell2) arrCells.push(newCell2);
+    const jumpX = enemyCell.x + dx;
+    const jumpY = enemyCell.y + dy;
+    const jumpCell = this.board.getCell(jumpX, jumpY);
 
-    return arrCells;
+    return jumpCell !== null && jumpCell.isEmpty();
+  }
+
+  /**
+   * Находит все возможные обычные ходы (без взятия) вперёд по диагонали.
+   * Шашка может ходить только вперёд (в зависимости от цвета).
+   */
+  private getCellsForMoves(fromCell: Cell): Cell[] {
+    const direction = this.color === Color.WHITE ? -1 : 1;
+    const moves: Cell[] = [];
+
+    const potentialMoves = [
+      this.board.getCell(fromCell.x - 1, fromCell.y + direction),
+      this.board.getCell(fromCell.x + 1, fromCell.y + direction)
+    ];
+
+    for (const cell of potentialMoves) {
+      if (cell && cell.isEmpty() && this.isValidPosition(cell.x, cell.y)) {
+        moves.push(cell);
+      }
+    }
+
+    return moves;
   }
 }

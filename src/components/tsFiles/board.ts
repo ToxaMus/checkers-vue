@@ -1,41 +1,72 @@
-import Cell from "./cell";
-import { Color } from "./color";
-import Figures from "./figures";
-import Checker from "./typesFigures/checker";
+import {Cell} from "./cell";
+import { Checker } from "./typesFigures/checker";
+import { BackgroundColor, Color } from "./color";
 
-export default class Board {
-  board: Cell[][] = [];
 
-  initBoard() {
-  this.board = [];
+export  class Board {
+  // Публичное поле с явной типизацией
+  public readonly board: Cell[][] = [];
 
-  for (let row = 0; row < 8; row++) {
-    const boardRow: Cell[] = [];
-    for (let col = 0; col < 8; col++) {
-      let figure = null;
+  public initBoard(): void {
+    for (let row = 0; row < 8; row++) {
+      const boardRow: Cell[] = [];
+      for (let col = 0; col < 8; col++) {
+        const isBlackCell = this.isBlackCell(col, row);
+        const cellColor = isBlackCell
+          ? BackgroundColor.DARK
+          : BackgroundColor.LIGHT;
 
-      // Сразу получаем цвет клетки
-      const cellColor = (row + col) % 2 == 0 ? Color.BLACK : Color.WHITE;
+        const cell = new Cell(col, row, cellColor);
 
-      // Проверяем именно на черный цвет
-      if (cellColor === Color.BLACK) {  // Теперь это сравнение строк
-        if (row < 3) {
-          figure = new Figures(new Checker(this), Color.BLACK);
+        if (isBlackCell) {
+          if (row < 3) {
+            cell.figure = new Checker(this, Color.BLACK);
+          } else if (row > 4) {
+            cell.figure = new Checker(this, Color.WHITE);
+          }
         }
-        else if (row > 4) {
-          figure = new Figures(new Checker(this), Color.WHITE);
-        }
+
+        boardRow.push(cell);
       }
-
-      boardRow.push(new Cell(col, row, figure, cellColor));
+      this.board.push(boardRow);
     }
-    this.board.push(boardRow);
   }
-}
-  public getCell(x: number, y: number): Cell | undefined {
-    if (x >= 0 && x < 8 && y >= 0 && y < 8) {
-      return this.board[y]?.[x]; // Исправлено с [x][y] на [y][x]
+
+  /**
+   * Проверяет, является ли клетка чёрной (по шахматной разметке)
+   * @param x - координата по горизонтали
+   * @param y - координата по вертикали
+   * @returns true, если клетка чёрная
+   */
+  public isBlackCell(x: number, y: number): boolean {
+    return (x + y) % 2 === 1;
+  }
+
+  /**
+   * Получает клетку по координатам
+   * @param x - координата по горизонтали (0–7)
+   * @param y - координата по вертикали (0–7)
+   * @returns Cell | undefined, если координаты вне доски
+   */
+  public getCell(x: number, y: number): Cell | null {
+    if (x < 0 || x >= 8 || y < 0 || y >= 8) {
+      return null;
+    } else if (this.board[y] === undefined || this.board[y][x] === undefined) {
+      return null;
     }
-    return undefined;
+
+    return this.board[y][x];
+  }
+
+  /**
+   * Возвращает все клетки доски (для итерации)
+   * @returns Массив всех клеток
+   */
+  public getAllCells(): Cell[] {
+    const allCells: Cell[] = [];
+    for (const row of this.board) {
+      allCells.push(...row);
+    }
+    return allCells;
   }
 }

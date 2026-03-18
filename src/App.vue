@@ -1,23 +1,22 @@
-  <template>
+<template>
   <div id="board">
-    <BoardComp :board="board"></BoardComp>
+    <BoardComp :board="board" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import Board from './components/tsFiles/board';
+import {Board} from './components/tsFiles/board';
 import BoardComp from './components/boardComp.vue';
-import Game from './game/game';
+import GameManager from './game/gameManage';
 
-const board = ref(new Board());
+const board = ref<Board>(new Board());
 
 onMounted(() => {
-  board.value.initBoard();
-  const game = new Game(board.value); // передаем board.value, а не board
-  game.game();
-});
+   board.value.initBoard()
+   new GameManager(board.value)
 
+});
 </script>
 
 <style scoped>
