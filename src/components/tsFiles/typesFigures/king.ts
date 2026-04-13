@@ -15,8 +15,8 @@ export class King extends BaseFigure {
    * @param cell — клетка с дамкой
    * @returns { moves: Cell[]; enemies: Cell[] } — возможные ходы и враги
    */
-  public moves(cell: Cell): { moves: Cell[]; enemies: Cell[] } {
-    if (!cell.figure || cell.figure !== this) return { moves: [], enemies: [] };
+  public moves(cell: Cell): { moves: Cell[]; enemies: Cell[], possibility: Cell | null } {
+    if (!cell.figure || cell.figure !== this) return { moves: [], enemies: [], possibility: null };
 
     const movesArr: Cell[] = [];
     const enemiesArr: Cell[] = [];
@@ -24,11 +24,11 @@ export class King extends BaseFigure {
     this.findCaptures(cell, movesArr, enemiesArr);
 
     if (movesArr.length > 0) {
-      return { moves: movesArr, enemies: enemiesArr };
+      return { moves: movesArr, enemies: enemiesArr, possibility: cell };
     }
 
     this.findSimpleMoves(cell, movesArr);
-    return { moves: movesArr, enemies: enemiesArr };
+    return { moves: movesArr, enemies: enemiesArr, possibility: cell };
   }
 
   /**
@@ -41,7 +41,7 @@ export class King extends BaseFigure {
   private findCaptures(elem: Cell, moves: Cell[], enemies: Cell[]): void {
     if (!elem.figure) return; // Защита от undefined
 
-    for (const dir of this.DIRECTIONS) {
+    for (const dir of BaseFigure.DIRECTIONS) {
       let step = 1;
       let enemyCell: Cell | null = null;
 
@@ -55,7 +55,7 @@ export class King extends BaseFigure {
         const checkCell = this.board.getCell(checkX, checkY);
         if (!checkCell) break;
 
-        if (checkCell.figure) {
+      if (checkCell.figure && checkCell.figure.color !== this.color) {
                     // Если нашли первую вражескую фигуру — запоминаем её
           if (!enemyCell) {
             enemyCell = checkCell;
@@ -83,7 +83,7 @@ export class King extends BaseFigure {
    * @param moves — массив для сохранения возможных ходов
    */
   private findSimpleMoves(elem: Cell, moves: Cell[]): void {
-    for (const dir of this.DIRECTIONS) {
+    for (const dir of BaseFigure.DIRECTIONS) {
       let step = 1;
 
       while (true) {

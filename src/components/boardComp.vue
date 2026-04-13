@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 import CellComp from './cellComp.vue'
-import type Board from './tsFiles/board';
+import type { Board }  from './tsFiles/board';
 
 defineProps<{
   board: Board

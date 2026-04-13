@@ -14,5 +14,6 @@ export enum BackgroundColor {
   DARK = "#D3D3D3",
   SELECTED = "#4CAF50",
   MOVE = "#2196F3",
-  ENEMY = "#f44336"
+  ENEMY = "#f44336",
+  POSSIBLE_EATING = "#FF8C00"
 }

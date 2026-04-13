@@ -1,5 +1,5 @@
-import type { Board } from "../board";
-import type { Cell } from "../cell";
+import  { Board } from "../board";
+import  { Cell } from "../cell";
 import { Color } from "../color";
 import { BaseFigure } from "./baseFigure";
 
@@ -12,20 +12,20 @@ export class Checker extends BaseFigure {
    * Возвращает возможные ходы и вражеские фигуры, которых можно побить из текущей клетки.
    * Учитывает правило обязательного взятия: если есть возможность бить, обычные ходы не разрешаются.
    */
-  public moves(cell: Cell): { moves: Cell[]; enemies: Cell[] } | null {
-    if (!cell.figure || cell.figure !== this) return { moves: [], enemies: [] };
+  public moves(cell: Cell): { moves: Cell[]; enemies: Cell[], possibility: Cell | null }  {
+    if (!cell.figure || cell.figure !== this) return { moves: [], enemies: [], possibility: null };
 
     // Сначала ищем все возможные ходы со взятием
     const captureMoves = this.findCaptureMoves(cell);
 
     if (captureMoves.length > 0) {
       // Если есть возможность бить, разрешаем только такие ходы
-      return { moves: captureMoves, enemies: this.findEnemiesForCapture(cell) };
+      return { moves: captureMoves, enemies: this.findEnemiesForCapture(cell), possibility: cell };
     }
 
     // Иначе ищем обычные ходы вперёд по диагонали
     const regularMoves = this.getCellsForMoves(cell);
-    return { moves: regularMoves, enemies: [] };
+    return { moves: regularMoves, enemies: [], possibility: cell };
   }
 
   /**
@@ -34,7 +34,7 @@ export class Checker extends BaseFigure {
   private findCaptureMoves(cell: Cell): Cell[] {
     const moves: Cell[] = [];
 
-    for (const dir of this.DIRECTIONS) {
+    for (const dir of BaseFigure.DIRECTIONS) {
       const enemyX = cell.x + dir.x;
       const enemyY = cell.y + dir.y;
       const enemyCell = this.board.getCell(enemyX, enemyY);
@@ -64,7 +64,7 @@ export class Checker extends BaseFigure {
   private findEnemiesForCapture(cell: Cell): Cell[] {
     const enemies: Cell[] = [];
 
-    for (const dir of this.DIRECTIONS) {
+    for (const dir of  BaseFigure.DIRECTIONS) {
       const enemyX = cell.x + dir.x;
       const enemyY = cell.y + dir.y;
       const enemyCell = this.board.getCell(enemyX, enemyY);

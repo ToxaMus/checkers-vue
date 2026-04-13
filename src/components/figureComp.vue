@@ -3,16 +3,12 @@
     v-if="props.cell.figure"
     class="figure"
     :class="figureClasses"
-    :aria-label="figureAriaLabel"
-  >
-    {{ figureSymbol }}
-  </div>
+  ></div>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
 import type {Cell} from "./tsFiles/cell";
-import  { Color } from "./tsFiles/color"; // Предполагаем, что Color — enum или тип
 
 const props = defineProps<{
   cell: Cell;
@@ -28,24 +24,6 @@ const figureClasses = computed(() => {
     }
   }
   return classes;
-});
-
-// Символ для фигуры
-const figureSymbol = computed(() => {
-  if (!props.cell.figure) return "";
-  if (props.cell.figure.isKing) {
-    return "♛"; // Unicode-символ для дамки (можно заменить на "K" или другой)
-  }
-  return "●"; // Символ для обычной шашки
-});
-
-// ARIA-метка для доступности
-const figureAriaLabel = computed(() => {
-  if (!props.cell.figure) return "";
-  const type = props.cell.figure.isKing ? "дамка" : "шашка";
-  const color = props.cell.figure.color === Color.WHITE ? "белая" : "чёрная";
-  const position = `клетка ${props.cell.x},${props.cell.y}`;
-  return `Фигура: ${color} ${type} (${position})`;
 });
 </script>
 

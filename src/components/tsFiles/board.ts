@@ -1,11 +1,11 @@
-import {Cell} from "./cell";
-import { Checker } from "./typesFigures/checker";
-import { BackgroundColor, Color } from "./color";
+import { Cell } from './cell';
+import { Checker } from './typesFigures/checker';
+import { BackgroundColor, Color } from './color';
 
 
 export  class Board {
   // Публичное поле с явной типизацией
-  public readonly board: Cell[][] = [];
+  public board: Cell[][] = [];
 
   public initBoard(): void {
     for (let row = 0; row < 8; row++) {
@@ -18,18 +18,31 @@ export  class Board {
 
         const cell = new Cell(col, row, cellColor);
 
-        if (isBlackCell) {
-          if (row < 3) {
-            cell.figure = new Checker(this, Color.BLACK);
-          } else if (row > 4) {
-            cell.figure = new Checker(this, Color.WHITE);
-          }
-        }
+        // if (isBlackCell) {
+        //   if (row < 3) {
+        //     cell.figure = new Checker(this, Color.BLACK);
+        //   } else if (row > 4) {
+        //     cell.figure = new Checker(this, Color.WHITE);
+        //   }
+        // }
 
         boardRow.push(cell);
       }
       this.board.push(boardRow);
     }
+
+    this.testKing()
+  }
+
+  public testKing(): void {
+    let enemyFirstCell = this.getCell(5, 6);
+    if (!enemyFirstCell) return;
+    enemyFirstCell.figure = new Checker(this, Color.BLACK);
+
+    enemyFirstCell = this.getCell(2, 1);
+    if (!enemyFirstCell) return;
+    enemyFirstCell.figure = new Checker(this, Color.WHITE);
+
   }
 
   /**
@@ -58,15 +71,4 @@ export  class Board {
     return this.board[y][x];
   }
 
-  /**
-   * Возвращает все клетки доски (для итерации)
-   * @returns Массив всех клеток
-   */
-  public getAllCells(): Cell[] {
-    const allCells: Cell[] = [];
-    for (const row of this.board) {
-      allCells.push(...row);
-    }
-    return allCells;
-  }
 }

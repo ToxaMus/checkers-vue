@@ -1,7 +1,7 @@
 import type { Board } from "@/components/tsFiles/board";
 import { Keyboard } from "./types_of_management/keyboard";
-import { MoveValidator } from "./moveValidator";
 import type { Cell } from "@/components/tsFiles/cell";
+import MoveValidator from "./moveValidator";
 
 export default class GameManager {
   private board: Board;
@@ -28,6 +28,6 @@ export default class GameManager {
   private onEnter(cell: Cell) {
     if (!cell.isBlack() ) return;
 
-    this.validator.select(cell);
+    this.validator.start(cell);
   }
 }

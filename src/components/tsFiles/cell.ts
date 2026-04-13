@@ -1,13 +1,13 @@
-import { BackgroundColor, BorderColor } from "./color";
-import type { BaseFigure } from "./typesFigures/baseFigure";
+import { BackgroundColor, BorderColor } from './color';
+import { BaseFigure } from './typesFigures/baseFigure';
 
 export class Cell {
   readonly x: number;
   readonly y: number;
-  figure: BaseFigure | undefined = undefined;
-  colorBackground: BackgroundColor;
-  borderColor: BorderColor = BorderColor.DEFAULT;
-  isActive: boolean = false;
+  public figure: BaseFigure | undefined = undefined;
+  public colorBackground: BackgroundColor;
+  public borderColor: BorderColor = BorderColor.DEFAULT;
+  public isActive: boolean = false;
 
 
   constructor(x: number, y: number, color: BackgroundColor) {
@@ -29,12 +29,8 @@ export class Cell {
     return (this.x + this.y) % 2 !== 0;
   }
 
-  public canAcceptMove(targetColor: BackgroundColor): boolean {
-    return this.isActive && this.colorBackground === targetColor;
-  }
-
-  public setActive(active: boolean): void {
-    this.isActive = active;
+  public canMoving(): boolean {
+    return this.colorBackground === BackgroundColor.MOVE;
   }
 
   public clear(): void {

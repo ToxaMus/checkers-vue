@@ -6,10 +6,6 @@
       'active--cell': isActiveCell,
       'highlighted': props.cell.isActive
     }"
-    @click="$emit('click', props.cell)"
-    :tabindex="props.isKeyboardActive ? 0 : -1"
-    role="button"
-    :aria-label="`Клетка ${props.cell.x},${props.cell.y}`"
   >
     <FigureComp :cell="props.cell" />
   </div>
@@ -18,7 +14,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import FigureComp from "./figureComp.vue";
-import type Cell from "./tsFiles/cell";
+import type {Cell} from "./tsFiles/cell";
 import { BackgroundColor, BorderColor } from "./tsFiles/color";
 
 const props = defineProps<{
