@@ -10,7 +10,7 @@ export class Course {
   /**
    * Возвращает текущего игрока
    */
-  getCurrentPlayer(): Color {
+  get getCurrentPlayer(): Color {
     return this.currentPlayer;
   }
 

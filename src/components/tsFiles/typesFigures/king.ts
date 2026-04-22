@@ -13,9 +13,9 @@ export class King extends BaseFigure {
    * Возвращает возможные ходы и вражеские фигуры для дамки.
    * Сначала ищет ходы со взятием, затем — обычные ходы.
    * @param cell — клетка с дамкой
-   * @returns { moves: Cell[]; enemies: Cell[] } — возможные ходы и враги
+   * @returns объект с массивами ходов, врагов и возможной клеткой
    */
-  public moves(cell: Cell): { moves: Cell[]; enemies: Cell[], possibility: Cell | null } {
+  public moves(cell: Cell): { moves: Cell[]; enemies: Cell[]; possibility: Cell | null } {
     if (!cell.figure || cell.figure !== this) return { moves: [], enemies: [], possibility: null };
 
     const movesArr: Cell[] = [];
@@ -39,7 +39,7 @@ export class King extends BaseFigure {
    * @param enemies — массив для сохранения вражеских фигур
    */
   private findCaptures(elem: Cell, moves: Cell[], enemies: Cell[]): void {
-    if (!elem.figure) return; // Защита от undefined
+    if (!elem.figure) return;
 
     for (const dir of BaseFigure.DIRECTIONS) {
       let step = 1;
@@ -49,26 +49,32 @@ export class King extends BaseFigure {
         const checkX = elem.x + step * dir.x;
         const checkY = elem.y + step * dir.y;
 
-        // Выходим, если вышли за пределы доски
         if (!this.isValidPosition(checkX, checkY)) break;
 
         const checkCell = this.board.getCell(checkX, checkY);
         if (!checkCell) break;
 
-      if (checkCell.figure && checkCell.figure.color !== this.color) {
-                    // Если нашли первую вражескую фигуру — запоминаем её
+        // Встретили вражескую фигуру
+        if (checkCell.figure && checkCell.figure.color !== this.color) {
           if (!enemyCell) {
-            enemyCell = checkCell;
+            enemyCell = checkCell; // первая вражеская фигура на пути
           } else {
-            // Вторая вражеская фигура на пути — дальше идти нельзя
+            // вторая вражеская фигура — дальше идти нельзя
             break;
           }
         } else {
-          // Пустая клетка после вражеской фигуры — возможный ход со взятием
+          // Клетка без врага (пустая или своя фигура)
           if (enemyCell) {
-            moves.push(checkCell);
-            enemies.push(enemyCell);
+            // Если уже есть враг, то можно бить только через пустые клетки
+            if (checkCell.isEmpty()) {
+              moves.push(checkCell);
+              enemies.push(enemyCell);
+            } else {
+              // Наткнулись на свою фигуру или стену — ход невозможен
+              break;
+            }
           }
+          // Если enemyCell === null, просто продолжаем движение (пустая клетка до врага)
         }
 
         step++;
@@ -90,16 +96,14 @@ export class King extends BaseFigure {
         const checkX = elem.x + step * dir.x;
         const checkY = elem.y + step * dir.y;
 
-        // Выходим, если вышли за пределы доски
         if (!this.isValidPosition(checkX, checkY)) break;
 
         const checkCell = this.board.getCell(checkX, checkY);
-        if (!checkCell || checkCell.figure) break; // Клетка занята или не существует
+        if (!checkCell || !checkCell.isEmpty()) break;
 
-        moves.push(checkCell); // Добавляем пустую клетку как возможный ход
+        moves.push(checkCell);
         step++;
       }
     }
   }
-
 }

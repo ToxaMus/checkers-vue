@@ -11,48 +11,21 @@ export  class Board {
     for (let row = 0; row < 8; row++) {
       const boardRow: Cell[] = [];
       for (let col = 0; col < 8; col++) {
-        const isBlackCell = this.isBlackCell(col, row);
-        const cellColor = isBlackCell
-          ? BackgroundColor.DARK
-          : BackgroundColor.LIGHT;
+        const cell = new Cell(col, row);
 
-        const cell = new Cell(col, row, cellColor);
-
-        // if (isBlackCell) {
-        //   if (row < 3) {
-        //     cell.figure = new Checker(this, Color.BLACK);
-        //   } else if (row > 4) {
-        //     cell.figure = new Checker(this, Color.WHITE);
-        //   }
-        // }
+        if (cell.isBlack()) {
+          if (row < 3) {
+            cell.figure = new Checker(this, Color.BLACK);
+          } else if (row > 4) {
+            cell.figure = new Checker(this, Color.WHITE);
+          }
+        }
 
         boardRow.push(cell);
       }
       this.board.push(boardRow);
     }
 
-    this.testKing()
-  }
-
-  public testKing(): void {
-    let enemyFirstCell = this.getCell(5, 6);
-    if (!enemyFirstCell) return;
-    enemyFirstCell.figure = new Checker(this, Color.BLACK);
-
-    enemyFirstCell = this.getCell(2, 1);
-    if (!enemyFirstCell) return;
-    enemyFirstCell.figure = new Checker(this, Color.WHITE);
-
-  }
-
-  /**
-   * Проверяет, является ли клетка чёрной (по шахматной разметке)
-   * @param x - координата по горизонтали
-   * @param y - координата по вертикали
-   * @returns true, если клетка чёрная
-   */
-  public isBlackCell(x: number, y: number): boolean {
-    return (x + y) % 2 === 1;
   }
 
   /**

@@ -3,8 +3,7 @@
     class="cell"
     :style="cellStyle"
     :class="{
-      'active--cell': isActiveCell,
-      'highlighted': props.cell.isActive
+      'active--cell': isActiveCell
     }"
   >
     <FigureComp :cell="props.cell" />
@@ -19,7 +18,6 @@ import { BackgroundColor, BorderColor } from "./tsFiles/color";
 
 const props = defineProps<{
   cell: Cell;
-  isKeyboardActive?: boolean;
 }>();
 
 const cellStyle = computed(() => ({
@@ -46,10 +44,7 @@ const isActiveCell = computed(
   outline: none;
 }
 
-.cell:focus {
-  outline: 2px solid #2196F3;
-  outline-offset: 2px;
-}
+
 
 .active--cell {
   z-index: 10;
@@ -57,10 +52,5 @@ const isActiveCell = computed(
   box-shadow: 0 5px 8px rgba(0, 0, 0, 0.2);
   border-color: #ff9800;
   border-width: 3px;
-}
-
-.highlighted {
-  background-color: #2196F3 !important;
-  opacity: 0.8;
 }
 </style>

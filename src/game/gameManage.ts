@@ -4,16 +4,15 @@ import type { Cell } from "@/components/tsFiles/cell";
 import MoveValidator from "./moveValidator";
 
 export default class GameManager {
-  private board: Board;
   private keyboard: Keyboard;
-  private validator: MoveValidator;
+  public validator: MoveValidator;
 
   constructor(board: Board) {
-    this.board = board;
     this.keyboard = new Keyboard(board);
     this.validator = new MoveValidator(board); // Передаём board
     this.start();
   }
+
 
   start() {
     // Обработка клавиатуры
@@ -30,4 +29,6 @@ export default class GameManager {
 
     this.validator.start(cell);
   }
+
+
 }

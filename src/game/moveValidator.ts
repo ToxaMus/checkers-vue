@@ -19,15 +19,25 @@ export default class MoveValidator {
   private board: Board;                    // Доска игры
   private possibilityMoves: groupCells = { moves: [], enemies: [], possibility: null }; // Возможные ходы текущей фигуры
   private highLightCells: HighlightCells = new HighlightCells(); // Подсветка клеток
-  private course: Course = new Course();   // Управление очередью ходов
+  public course: Course = new Course();   // Управление очередью ходов
   private groupScanner: groupCells[] = [];  // Все возможные ходы для текущего игрока
-  private scanner: ScannerBoard;            // Сканер доски для поиска ходов
+  public scanner: ScannerBoard;            // Сканер доски для поиска ходов
   private activeCell: Cell | null = null;   // Выбранная активная клетка с фигурой
   private isNextMove: boolean = false;      // Флаг: можно ли сделать дополнительный ход (после съедения)
+  public onGameEnd?: (winner: Color | null) => void;
 
   constructor(board: Board) {
     this.board = board;
     this.scanner = new ScannerBoard(this.board);
+  }
+
+  private checkGameState(): void {
+    const currentPlayerColor = this.course.getCurrentPlayer;
+    const gameResult = this.scanner.checkGameOver(currentPlayerColor);
+
+    if (gameResult.isOver && this.onGameEnd) {
+      this.onGameEnd(gameResult.winner);
+    }
   }
 
   /**
@@ -84,7 +94,8 @@ export default class MoveValidator {
   }
 
   /**
-   * Выбор фигуры и подсветка возможных ходов
+
+  * Выбор фигуры и подсветка возможных ходов
    * @param cell - выбранная клетка с фигурой
    */
   private choice(cell: Cell): void {
@@ -138,6 +149,7 @@ export default class MoveValidator {
       this.activeCell = null;      // Сбрасываем активную клетку
     }
 
+    this.checkGameState()
   }
 
   /**
@@ -145,7 +157,8 @@ export default class MoveValidator {
    */
   private scanBoard(): void {
     // Получаем все возможные ходы для текущего игрока
-    const groups = this.scanner.getPossibilityMoves(this.course.getCurrentPlayer());
+    const groups = this.scanner.getPossibilityMoves(this.course.getCurrentPlayer);
+
 
     if (groups) {
       this.groupScanner = groups
