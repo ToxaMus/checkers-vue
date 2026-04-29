@@ -6,7 +6,7 @@
       'active--cell': isActiveCell
     }"
   >
-    <FigureComp :cell="props.cell" />
+    <FigureComp :figure="props.cell.figure" />
   </div>
 </template>
 

@@ -4,7 +4,7 @@
     Фигура представляет собой круг с цветом, соответствующим игроку
   -->
   <div
-    v-if="props.cell.figure"
+    v-if="props.figure"
     class="figure"
     :class="figureClasses"
   ></div>
@@ -12,33 +12,25 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { Cell } from "./tsFiles/cell";
+import type { BaseFigure } from "./tsFiles/typesFigures/baseFigure";
 
 /**
  * Пропсы компонента FigureComp
- * @property cell - клетка, содержащая фигуру для отображения
+ * @property figure - фигура для отображения
  */
 const props = defineProps<{
-  cell: Cell;
+  figure: BaseFigure | undefined;
 }>();
 
 /**
  * Вычисляемые классы для стилизации фигуры
- * Динамически добавляет классы в зависимости от:
- * - Цвета фигуры (white/black)
- * - Является ли фигура дамкой (king)
- *
- * @returns массив строк с CSS-классами
  */
 const figureClasses = computed(() => {
   const classes: string[] = [];
 
-  if (props.cell.figure) {
-    // Добавляем класс цвета фигуры (white или black)
-    classes.push(props.cell.figure.color);
-
-    // Если фигура - дамка, добавляем соответствующий класс
-    if (props.cell.figure.isKing) {
+  if (props.figure) {
+    classes.push(props.figure.color);
+    if (props.figure.isKing) {
       classes.push("king");
     }
   }
@@ -49,69 +41,45 @@ const figureClasses = computed(() => {
 
 <style scoped>
 .figure {
-  /* Размеры фигуры */
   --size: 40px;
   width: 85%;
   height: 85%;
   min-width: var(--size);
   min-height: var(--size);
-
-  /* Форма - круг */
   border-radius: 50%;
-
-  /* Центрирование содержимого (для будущей иконки или текста) */
   display: flex;
   align-items: center;
   justify-content: center;
-
-  /* Граница и тени */
   border: 2px solid;
   font-weight: bold;
-
-  /* Взаимодействие */
   cursor: pointer;
-  user-select: none;  /* Запрет выделения текста */
-
-  /* Анимации */
+  user-select: none;
   transition: all 0.2s ease;
   font-size: 1.2rem;
 }
 
-/* Эффект при наведении на фигуру */
 .figure:hover {
-  transform: scale(1.05);           /* Небольшое увеличение */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Тень */
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-/**
- * Стиль для белых шашек
- * Светлый градиент от кремового до слоновой кости
- */
-.figure.white {
+.figure.king {
+  border-width: 3px;
+  border-color: gold;
+  font-size: 1.4rem;
+  font-weight: 900;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.white {
   background: linear-gradient(135deg, #FFFFF0, #F5F5DC);
   border-color: #cccccc;
   color: #333333;
 }
 
-/**
- * Стиль для чёрных шашек
- * Тёмный градиент от светло-серого до тёмно-серого
- */
-.figure.black {
+.black {
   background: linear-gradient(135deg, #D3D3D3, #A9A9A9);
   border-color: #666666;
   color: #ffffff;
-}
-
-/**
- * Стиль для дамки (короля)
- * Отличается золотой границей и свечением
- */
-.figure.king {
-  border-width: 3px;                    /* Утолщённая граница */
-  border-color: gold;                   /* Золотой цвет границы */
-  font-size: 1.4rem;                    /* Увеличенный шрифт (для будущей иконки) */
-  font-weight: 900;                     /* Жирное начертание */
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); /* Золотое свечение */
 }
 </style>
