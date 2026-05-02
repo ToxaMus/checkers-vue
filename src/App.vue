@@ -1,189 +1,220 @@
 <template>
   <!--
-    Основной компонент игры в шашки
-    Содержит: игровое поле, уведомления и панель счётчика съеденных фигур
+    Компонент выбора цвета перед началом игры
+    v-if="!isClick" - показываем, пока пользователь не выбрал цвет
   -->
-  <div id="board">
+  <div class="notification" v-if="!isClick">
+    <h2>Выберите цвет</h2>
+    <div class="panelColors">
+      <div
+        class="icon white-icon"
+        :class="{selected: selectColor === 'white'}"
+        @click="selectedColor(Color.WHITE)"
+      ></div>
+      <div
+        class="icon black-icon"
+        :class="{selected: selectColor === 'black'}"
+        @click="selectedColor(Color.BLACK)"
+      ></div>
+    </div>
+
     <!--
-      Компонент доски: отображает клетки и фигуры
-      Передаём board как пропс для отображения состояния игры
+      Кнопка подтверждения выбора цвета
+      :disabled="!selectedColor" - блокируем кнопку, если цвет не выбран
+      @click="handleClick" - при клике подтверждаем выбор и закрываем окно
     -->
-    <BoardComp :board="board" />
+    <button
+      class="btn"
+      :disabled="!selectColor"
+      @click="handleClick"
+    >
+      Подтвердить
+    </button>
+
   </div>
 
   <!--
-    Компонент уведомления об окончании игры
-    Показывается только когда gameOver === true
-    :winner - победитель (Color.WHITE, Color.BLACK или null при ничьей)
-    @restartGame - событие для перезапуска игры
+    Передаём выбранный цвет в компонент игры
+    v-if="selectedColor && isClick" - показываем игру только когда цвет выбран и кнопка нажата
   -->
-  <notificationComp
-    v-if="gameOver"
-    :winner="winner"
-    @restartGame="restartGame"
-  />
-
-  <!--
-    Панель счётчиков съеденных фигур
-    :whiteCount - сколько белых фигур съедено
-    :blackCount - сколько чёрных фигур съедено
-  -->
-  <meterPanel
-    :whiteCount="whiteFigureCount"
-    :blackCount="blackFigureCount"
-  />
+  <CheckersGame v-if="selectColor && gameStated" :color="selectColor" @newGame="regestNewGame"/>
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue';
-  import { Board } from './components/tsFiles/board';
-  import BoardComp from './components/boardComp.vue';
-  import GameManager from './game/gameManage';
-  import { Color } from './components/tsFiles/color';
-  import notificationComp from './components/notificationComp.vue';
-  import meterPanel from './components/meterPanel.vue';
+import { ref } from 'vue';
+import CheckersGame from './СheckersGame.vue'; // Обратите внимание на правильное имя файла
+import { Color } from './components/tsFiles/color';
 
-  // ============ РЕАКТИВНЫЕ ПЕРЕМЕННЫЕ ============
+// Храним состояние: нажал ли пользователь на кнопку "Подтвердить"
+const isClick = ref(false);
 
-  /**
-   * Доска игры (реактивная, чтобы Vue отслеживал изменения)
-   * При изменении board перерисовывается BoardComp
-   */
-  const board = ref<Board>(new Board());
+// Храним выбранный пользователем цвет (может быть Color или null если не выбран)
+const selectColor = ref<Color | null>(null);
+const gameStated = ref(false);
 
-  /** Победитель игры (когда gameOver === true) */
-  const winner = ref<Color | null>(null);
-
-  /**
-   * Количество СЪЕДЕННЫХ белых фигур
-   * Начальное значение 0 - в начале игры никто никого не съел
-   */
-  const whiteFigureCount = ref(0);
-
-  /**
-   * Количество СЪЕДЕННЫХ чёрных фигур
-   * Начальное значение 0 - в начале игры никто никого не съел
-   */
-  const blackFigureCount = ref(0);
-
-  /** Флаг окончания игры (true - игра завершена, показываем уведомление) */
-  const gameOver = ref(false);
-
-  /**
-   * Менеджер игры (отвечает за управление с клавиатуры и валидацию ходов)
-   * Может быть null до инициализации
-   */
-  let gameManager: GameManager | null;
-
-  // ============ ЖИЗНЕННЫЙ ЦИКЛ КОМПОНЕНТА ============
-
-  /**
-   * Хук mounted - вызывается после монтирования компонента в DOM
-   * Запускает новую игру
-   */
-  onMounted(() => {
-    startGame();
-  });
-
-  // ============ МЕТОДЫ КОМПОНЕНТА ============
-
-  /**
-   * Создаёт новую доску с фигурами в начальной позиции
-   * @returns Board - новая инициализированная доска
-   *
-   * Пример: создаёт доску 8x8 с 12 белыми и 12 чёрными шашками
-   */
-  const createNewBoard = () => {
-    const newBoard = new Board();  // Создаём пустую доску
-    newBoard.initBoard();          // Расставляем фигуры в начальной позиции
-    return newBoard;
+/**
+ * Функция подтверждения выбора цвета
+ */
+const handleClick = () => {
+  // Проверяем, что цвет выбран
+  if (selectColor.value) {
+    isClick.value = true; // Скрываем окно выбора цвета и показываем игру
+    gameStated.value = true;
   }
+};
 
-  /**
-   * Сбрасывает счётчики съеденных фигур до 0
-   * Вызывается при старте новой игры
-   */
-  const resetCounts = () => {
-    whiteFigureCount.value = 0;
-    blackFigureCount.value = 0;
-  }
+/**
+ * Функция выбора цвета
+ * @param color - выбранный цвет
+ */
+const selectedColor = (color: Color) => {
+  selectColor.value = color;
+};
 
-  /**
-   * Запускает новую игру
-   * Создаёт доску, инициализирует менеджер, настраивает колбэки
-   */
-  const startGame = () => {
-    // 1. Создаём новую доску с фигурами
-    const newBoard = createNewBoard();
-    board.value = newBoard;
+const regestNewGame = () => {
+  isClick.value = false;
+  selectColor.value = null;
+  gameStated.value = false;
+}
 
-    // 2. Создаём менеджер игры (связывает доску с управлением)
-    gameManager = new GameManager(board.value);
-
-    // 3. Настраиваем колбэк окончания игры
-    // Вызывается, когда у текущего игрока нет возможных ходов
-    gameManager.validator.onGameEnd = (winning: Color | null) => {
-      winner.value = winning;      // Запоминаем победителя
-      gameOver.value = true;       // Показываем уведомление
-    };
-
-    // 4. Настраиваем колбэк обновления счётчиков
-    // Вызывается при каждом съедании фигуры
-    gameManager.validator.onUpdateCounts = (white: number, black: number) => {
-      whiteFigureCount.value = white;  // Обновляем счётчик съеденных белых
-      blackFigureCount.value = black;  // Обновляем счётчик съеденных чёрных
-    };
-
-    // 5. Сбрасываем счётчики (начинаем с 0 съеденных)
-    resetCounts();
-  }
-
-  /**
-   * Перезапускает игру (вызывается из notificationComp)
-   * Сбрасывает состояние и создаёт новую игру
-   */
-  const restartGame = () => {
-    winner.value = null;          // Очищаем победителя
-    gameOver.value = false;       // Скрываем уведомление
-    startGame();                  // Запускаем новую игру
-  }
-
-  /**
-   * ПРИМЕЧАНИЕ: Обработка ходов происходит через GameManager
-   * GameManager слушает события клавиатуры и вызывает validator.start()
-   *
-   * Схема работы:
-   * 1. Пользователь нажимает стрелки → перемещение жёлтой рамки
-   * 2. Пользователь нажимает Enter → GameManager.onEnter()
-   * 3. GameManager вызывает validator.start(cell)
-   * 4. MoveValidator обрабатывает ход:
-   *    - Выбор фигуры или выполнение хода
-   *    - Съедание врага (если есть)
-   *    - Превращение в дамку (если достигнут край)
-   *    - Обновление счётчиков через onUpdateCounts
-   *    - Проверка окончания игры через onGameEnd
-   * 5. Vue автоматически обновляет UI (доска и счётчики)
-   */
 </script>
 
 <style scoped>
-  /**
-   * Стили для основного контейнера с доской
-   * Использует min() для адаптивности: доска занимает 80% от меньшей стороны экрана
-   * При этом доска всегда квадратная и не выходит за границы
-   */
-  #board {
-    width: min(80vh, 80vw);     /* Ширина = 80% от высоты ИЛИ ширины экрана (что меньше) */
-    height: min(80vh, 80vw);    /* Высота такая же, чтобы доска была квадратной */
-    border: 2px solid black;    /* Чёрная рамка вокруг доски */
-    position: relative;          /* Для позиционирования внутренних элементов */
-    justify-self: center;        /* Центрирование по горизонтали в Grid контейнере */
-    display: flex;
-    flex-direction: column;      /* Вертикальное расположение рядов доски */
+/*
+  Стили для уведомления (окна выбора цвета)
+*/
+.notification {
+  position: fixed; /* Фиксированное позиционирование относительно окна браузера */
+  top: 50%; /* Центрируем по вертикали */
+  left: 50%; /* Центрируем по горизонтали */
+  transform: translate(-50%, -50%); /* Смещаем на половину своей ширины и высоты для точного центрирования */
+  display: flex;
+  flex-direction: column; /* Элементы располагаются вертикально */
+  justify-content: center;
+  align-items: center;
+  min-width: 300px; /* Минимальная ширина */
+  padding: 30px 20px; /* Внутренние отступы */
+  background: linear-gradient(135deg, #fff5e6 0%, #ffe0cc 100%); /* Градиентный фон */
+  border-radius: 20px; /* Закруглённые углы */
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2); /* Тень для глубины */
+  z-index: 1000; /* Чтобы окно было поверх других элементов */
+  text-align: center;
+}
+
+/* Заголовок */
+.notification h2 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 24px;
+}
+
+/* Контейнер для иконок цветов */
+.panelColors {
+  display: flex;
+  gap: 30px; /* Расстояние между иконками */
+  justify-content: center;
+  margin: 20px 0;
+}
+
+/* Общие стили для иконок (фигур) */
+.icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease; /* Плавная анимация при наведении */
+  border: 3px solid transparent; /* Прозрачная граница по умолчанию */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Эффект при наведении на иконку */
+.icon:hover {
+  transform: scale(1.1); /* Увеличиваем на 10% */
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Эффект при клике на иконку */
+.icon:active {
+  transform: scale(0.95); /* Немного уменьшаем для эффекта нажатия */
+}
+
+/* Стиль для выбранной иконки */
+.icon.selected {
+  border: 3px solid #ff6b6b; /* Красная рамка для выделения */
+  box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.3); /* Внешнее свечение */
+  transform: scale(1.05); /* Немного увеличиваем */
+}
+
+/* Стиль для белой фигуры */
+.white-icon {
+  background: radial-gradient(circle at 35% 35%, #ffffff, #e0e0e0);
+  border-color: #ccc;
+}
+
+/* Стиль для чёрной фигуры */
+.black-icon {
+  background: radial-gradient(circle at 35% 35%, #444444, #111111);
+  border-color: #555;
+}
+
+/* Стили для кнопки подтверждения */
+.btn {
+  padding: 12px 30px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 50px; /* Полностью закруглённая кнопка */
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+/* Эффект при наведении на активную кнопку */
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px); /* Поднимаем вверх */
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
+}
+
+/* Эффект при клике на активную кнопку */
+.btn:active:not(:disabled) {
+  transform: translateY(1px); /* Опускаем вниз */
+}
+
+/* Стиль для заблокированной кнопки */
+.btn:disabled {
+  background: linear-gradient(135deg, #cccccc 0%, #999999 100%);
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+
+/* Адаптивные стили для мобильных устройств */
+@media (max-width: 600px) {
+  .notification {
+    min-width: 250px;
+    padding: 20px 15px;
   }
 
-  /**
-   * ПРИМЕЧАНИЕ: Сама доска (клетки) рисуется в BoardComp
-   * Здесь только внешний контейнер
-   */
+  .icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .panelColors {
+    gap: 20px;
+  }
+
+  .notification h2 {
+    font-size: 20px;
+  }
+
+  .btn {
+    padding: 10px 25px;
+    font-size: 14px;
+  }
+}
 </style>
