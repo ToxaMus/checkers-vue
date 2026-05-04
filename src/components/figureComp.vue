@@ -52,7 +52,6 @@ const figureClasses = computed(() => {
   justify-content: center;
   border: 2px solid;
   font-weight: bold;
-  cursor: pointer;
   user-select: none;
   transition: all 0.2s ease;
   font-size: 1.2rem;

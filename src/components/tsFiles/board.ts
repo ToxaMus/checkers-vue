@@ -28,6 +28,21 @@ export  class Board {
 
   }
 
+  public getAllCells(): Cell[] {
+    const allCells: Cell[] = [];
+    for (const row of this.board) {
+      for (const cell of row) {
+        allCells.push(cell);
+      }
+    }
+
+    return allCells;
+  }
+
+  public getAllBlackCells(): Cell[] {
+    return this.getAllCells().filter(cell => cell.isBlack());
+  }
+
   /**
    * Получает клетку по координатам
    * @param x - координата по горизонтали (0–7)
