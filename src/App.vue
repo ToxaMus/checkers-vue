@@ -10,11 +10,15 @@
         class="icon white-icon"
         :class="{selected: selectColor === 'white'}"
         @click="selectedColor(Color.WHITE)"
+        @touchstart="onTouchStart"
+        @touchend="onTouchEnd(Color.WHITE)"
       ></div>
       <div
         class="icon black-icon"
         :class="{selected: selectColor === 'black'}"
         @click="selectedColor(Color.BLACK)"
+        @touchstart="onTouchStart"
+        @touchend="onTouchEnd(Color.BLACK)"
       ></div>
     </div>
 
@@ -27,6 +31,8 @@
       class="btn"
       :disabled="!selectColor"
       @click="handleClick"
+      @touchstart="onTouchStartBtn"
+      @touchend="onTouchEndBtn"
     >
       Подтвердить
     </button>
@@ -77,144 +83,264 @@ const regestNewGame = () => {
   gameStated.value = false;
 }
 
+const onTouchStart = (event: TouchEvent) => {
+  event.preventDefault();
+  const touch = event.currentTarget as HTMLElement;
+  touch.style.transform = 'scale(0.9)';
+}
+
+const onTouchEnd = (color: Color) => {
+  const divs = document.querySelectorAll('.icon')
+  divs.forEach(div => (div as HTMLElement).style.transform = '');
+  selectedColor(color);
+};
+
+const onTouchStartBtn = (event: TouchEvent) => {
+  event.preventDefault();
+  const touch = event.currentTarget as HTMLElement;
+
+  if (!(touch as HTMLButtonElement).disabled) touch.style.transform = 'scale(0.9)';
+};
+
+const onTouchEndBtn = (e: TouchEvent) => {
+  const touch = e.currentTarget as HTMLElement;
+  touch.style.transform = '';
+
+  if (!(touch as HTMLButtonElement).disabled) handleClick();
+
+}
+
 </script>
 
 <style scoped>
-/*
-  Стили для уведомления (окна выбора цвета)
-*/
+/* ========== БАЗОВЫЕ СТИЛИ (ПК) ========== */
 .notification {
-  position: fixed; /* Фиксированное позиционирование относительно окна браузера */
-  top: 50%; /* Центрируем по вертикали */
-  left: 50%; /* Центрируем по горизонтали */
-  transform: translate(-50%, -50%); /* Смещаем на половину своей ширины и высоты для точного центрирования */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
-  flex-direction: column; /* Элементы располагаются вертикально */
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-width: 300px; /* Минимальная ширина */
-  padding: 30px 20px; /* Внутренние отступы */
-  background: linear-gradient(135deg, #fff5e6 0%, #ffe0cc 100%); /* Градиентный фон */
-  border-radius: 20px; /* Закруглённые углы */
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2); /* Тень для глубины */
-  z-index: 1000; /* Чтобы окно было поверх других элементов */
+  min-width: 350px;
+  padding: 40px 30px;
+  background: linear-gradient(135deg, #fff5e6 0%, #ffe0cc 100%);
+  border-radius: 30px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
   text-align: center;
 }
 
-/* Заголовок */
 .notification h2 {
-  margin: 0 0 20px 0;
+  margin: 0 0 25px 0;
   color: #333;
-  font-size: 24px;
+  font-size: 28px;
 }
 
-/* Контейнер для иконок цветов */
 .panelColors {
   display: flex;
-  gap: 30px; /* Расстояние между иконками */
+  gap: 40px;
   justify-content: center;
-  margin: 20px 0;
+  margin: 25px 0;
 }
 
-/* Общие стили для иконок (фигур) */
 .icon {
-  width: 80px;
-  height: 80px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   cursor: pointer;
-  transition: all 0.3s ease; /* Плавная анимация при наведении */
-  border: 3px solid transparent; /* Прозрачная граница по умолчанию */
+  transition: all 0.3s ease;
+  border: 3px solid transparent;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Эффект при наведении на иконку */
+.btn {
+  padding: 15px 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 60px;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  margin-top: 15px;
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ========== ДЛЯ ТЕЛЕФОНОВ (до 912px) ========== */
+@media (max-width: 912px) {
+  .notification {
+    min-width: 85vw;
+    padding: 45px 30px;
+    border-radius: 40px;
+  }
+
+  .notification h2 {
+    font-size: 42px;
+    margin-bottom: 40px;
+  }
+
+  .panelColors {
+    gap: 70px;
+    margin: 40px 0;
+  }
+
+  .icon {
+    width: 160px;
+    height: 160px;
+  }
+
+  .btn {
+    padding: 22px 60px;
+    font-size: 32px;
+    margin-top: 30px;
+    border-radius: 80px;
+  }
+}
+
+/* ========== ДЛЯ СРЕДНИХ ТЕЛЕФОНОВ (600-800px) ========== */
+@media (min-width: 600px) and (max-width: 800px) {
+  .notification h2 {
+    font-size: 38px;
+  }
+
+  .icon {
+    width: 140px;
+    height: 140px;
+  }
+
+  .btn {
+    font-size: 28px;
+    padding: 20px 55px;
+  }
+}
+
+/* ========== ДЛЯ МАЛЕНЬКИХ ТЕЛЕФОНОВ (до 500px) ========== */
+@media (max-width: 500px) {
+  .notification {
+    min-width: 90vw;
+    padding: 35px 20px;
+    border-radius: 35px;
+  }
+
+  .notification h2 {
+    font-size: 32px;
+    margin-bottom: 30px;
+  }
+
+  .panelColors {
+    gap: 45px;
+    margin: 30px 0;
+  }
+
+  .icon {
+    width: 120px;
+    height: 120px;
+  }
+
+  .btn {
+    padding: 18px 50px;
+    font-size: 26px;
+    margin-top: 25px;
+  }
+}
+
+/* ========== ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ (до 380px) ========== */
+@media (max-width: 380px) {
+  .notification {
+    min-width: 95vw;
+    padding: 30px 15px;
+    border-radius: 30px;
+  }
+
+  .notification h2 {
+    font-size: 28px;
+    margin-bottom: 25px;
+  }
+
+  .panelColors {
+    gap: 35px;
+    margin: 25px 0;
+  }
+
+  .icon {
+    width: 100px;
+    height: 100px;
+  }
+
+  .btn {
+    padding: 16px 45px;
+    font-size: 22px;
+  }
+}
+
+/* ========== ДЛЯ ПЛАНШЕТОВ (800-1200px) ========== */
+@media (min-width: 800px) and (max-width: 1200px) {
+  .notification {
+    min-width: 500px;
+    padding: 50px 40px;
+  }
+
+  .notification h2 {
+    font-size: 36px;
+  }
+
+  .icon {
+    width: 130px;
+    height: 130px;
+  }
+
+  .btn {
+    padding: 18px 50px;
+    font-size: 24px;
+  }
+}
+
+/* Остальные стили (hover, active, selected и т.д.) остаются без изменений */
 .icon:hover {
-  transform: scale(1.1); /* Увеличиваем на 10% */
+  transform: scale(1.1);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
-/* Эффект при клике на иконку */
 .icon:active {
-  transform: scale(0.95); /* Немного уменьшаем для эффекта нажатия */
+  transform: scale(0.95);
 }
 
-/* Стиль для выбранной иконки */
 .icon.selected {
-  border: 3px solid #ff6b6b; /* Красная рамка для выделения */
-  box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.3); /* Внешнее свечение */
-  transform: scale(1.05); /* Немного увеличиваем */
+  border: 3px solid #ff6b6b;
+  box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.3);
+  transform: scale(1.05);
 }
 
-/* Стиль для белой фигуры */
 .white-icon {
   background: radial-gradient(circle at 35% 35%, #ffffff, #e0e0e0);
   border-color: #ccc;
 }
 
-/* Стиль для чёрной фигуры */
 .black-icon {
   background: radial-gradient(circle at 35% 35%, #444444, #111111);
   border-color: #555;
 }
 
-/* Стили для кнопки подтверждения */
-.btn {
-  padding: 12px 30px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 50px; /* Полностью закруглённая кнопка */
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
-  transition: all 0.3s ease;
-  margin-top: 10px;
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-}
-
-/* Эффект при наведении на активную кнопку */
 .btn:hover:not(:disabled) {
-  transform: translateY(-2px); /* Поднимаем вверх */
+  transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
 }
 
-/* Эффект при клике на активную кнопку */
 .btn:active:not(:disabled) {
-  transform: translateY(1px); /* Опускаем вниз */
+  transform: translateY(1px);
 }
 
-/* Стиль для заблокированной кнопки */
 .btn:disabled {
   background: linear-gradient(135deg, #cccccc 0%, #999999 100%);
   cursor: not-allowed;
   opacity: 0.6;
   transform: none;
-}
-
-
-/* Адаптивные стили для мобильных устройств */
-@media (max-width: 600px) {
-  .notification {
-    min-width: 250px;
-    padding: 20px 15px;
-  }
-
-  .icon {
-    width: 60px;
-    height: 60px;
-  }
-
-  .panelColors {
-    gap: 20px;
-  }
-
-  .notification h2 {
-    font-size: 20px;
-  }
-
-  .btn {
-    padding: 10px 25px;
-    font-size: 14px;
-  }
 }
 </style>

@@ -1,37 +1,18 @@
 <template>
-  <!--
-    Основной компонент игры в шашки
-    Содержит: игровое поле, уведомления и панель счётчика съеденных фигур
-  -->
-  <div id="board" :class="{ rotate: isRotate() }">
-    <!--
-      Компонент доски: отображает клетки и фигуры
-      Передаём board как пропс для отображения состояния игры
-    -->
-    <BoardComp :board="board" />
+  <div class="mobile-container">
+    <div class="spacer"></div>  <!-- Пустое пространство сверху -->
+
+    <div id="board" :class="{ rotate: isRotate() }">
+      <BoardComp :board="board" :colorPlayer="props.color"/>
+    </div>
+
+    <meterPanel
+      :whiteCount="whiteFigureCount"
+      :blackCount="blackFigureCount"
+    />
   </div>
 
-  <!--
-    Компонент уведомления об окончании игры
-    Показывается только когда gameOver === true
-    :winner - победитель (Color.WHITE, Color.BLACK или null при ничьей)
-    @restartGame - событие для перезапуска игры
-  -->
-  <notificationComp
-    v-if="gameOver"
-    :winner="winner"
-    @restartGame="newGame"
-  />
-
-  <!--
-    Панель счётчиков съеденных фигур
-    :whiteCount - сколько белых фигур съедено
-    :blackCount - сколько чёрных фигур съедено
-  -->
-  <meterPanel
-    :whiteCount="whiteFigureCount"
-    :blackCount="blackFigureCount"
-  />
+  <notificationComp v-if="gameOver" :winner="winner" @restartGame="newGame" />
 </template>
 
 <script setup lang="ts">
@@ -43,70 +24,63 @@
   import notificationComp from './components/notificationComp.vue';
   import meterPanel from './components/meterPanel.vue';
 
-  // Пропс для получения выбранного цвета от родительского компонента
+  // ========== ПРОПСЫ ==========
+  /** Цвет игрока (WHITE или BLACK), выбранный перед игрой */
   const props = defineProps<{
     color: Color
   }>();
 
+  // ========== EMIT ==========
+  const emit = defineEmits<{
+    'newGame': []  // Событие для перезапуска игры
+  }>();
+
+  // ========== СОСТОЯНИЕ ==========
+
+  /** Доска игры (реактивная, Vue отслеживает изменения) */
+  const board = ref<Board>(new Board());
+
+  /** Победитель игры (при gameOver === true) */
+  const winner = ref<Color | null>(null);
+
+  /** Количество съеденных белых фигур */
+  const whiteFigureCount = ref(0);
+
+  /** Количество съеденных чёрных фигур */
+  const blackFigureCount = ref(0);
+
+  /** Флаг окончания игры */
+  const gameOver = ref(false);
+
+  /** Менеджер игры (управление с клавиатуры и валидация ходов) */
+  let gameManager: GameManager | null;
+
+  // ========== МЕТОДЫ ==========
+
+  /**
+   * Нужно ли повернуть доску?
+   * Чёрные игроки видят доску повёрнутой на 180°
+   */
   const isRotate = () => {
     return props.color === Color.BLACK;
   };
 
-  const emit = defineEmits<{
-  'newGame': []
-  }>();
-
+  /** Перезапуск игры (уведомляем родительский компонент) */
   const newGame = () => {
     emit('newGame');
-  }
-
-  /**
-   * Доска игры (реактивная, чтобы Vue отслеживал изменения)
-   * При изменении board перерисовывается BoardComp
-   */
-  const board = ref<Board>(new Board());
-
-  /** Победитель игры (когда gameOver === true) */
-  const winner = ref<Color | null>(null);
-
-  /**
-   * Количество СЪЕДЕННЫХ белых фигур
-   * Начальное значение 0 - в начале игры никто никого не съел
-   */
-  const whiteFigureCount = ref(0);
-
-  /**
-   * Количество СЪЕДЕННЫХ чёрных фигур
-   * Начальное значение 0 - в начале игры никто никого не съел
-   */
-  const blackFigureCount = ref(0);
-
-  /** Флаг окончания игры (true - игра завершена, показываем уведомление) */
-  const gameOver = ref(false);
-
-  /**
-   * Менеджер игры (отвечает за управление с клавиатуры и валидацию ходов)
-   * Может быть null до инициализации
-   */
-  let gameManager: GameManager | null;
-
-  onMounted(() => {
-    startGame();
-  });
+  };
 
   /**
    * Создаёт новую доску с фигурами в начальной позиции
-   * @returns Board - новая инициализированная доска
    */
   const createNewBoard = () => {
-    const newBoard = new Board();  // Создаём пустую доску
-    newBoard.initBoard();          // Расставляем фигуры в начальной позиции
+    const newBoard = new Board();
+    newBoard.initBoard();  // Расставляем фигуры
     return newBoard;
   };
 
   /**
-   * Сбрасывает счётчики съеденных фигур до 0
-   * Вызывается при старте новой игры
+   * Сбрасывает счётчики съеденных фигур
    */
   const resetCounts = () => {
     whiteFigureCount.value = 0;
@@ -115,50 +89,82 @@
 
   /**
    * Запускает новую игру
-   * Создаёт доску, инициализирует менеджер, настраивает колбэки
    */
   const startGame = () => {
-    // 1. Создаём новую доску с фигурами
+    // 1. Создаём новую доску
     const newBoard = createNewBoard();
     board.value = newBoard;
 
-    // 2. Создаём менеджер игры (связывает доску с управлением)
-    gameManager = new GameManager(board.value);
+    // 2. Создаём менеджер игры (передаём доску и флаг поворота)
+    gameManager = new GameManager(board.value, isRotate());
 
     // 3. Настраиваем колбэк окончания игры
     gameManager.validator.onGameEnd = (winning: Color | null) => {
-      winner.value = winning;      // Запоминаем победителя
-      gameOver.value = true;       // Показываем уведомление
+      winner.value = winning;
+      gameOver.value = true;
     };
 
     // 4. Настраиваем колбэк обновления счётчиков
     gameManager.validator.onUpdateCounts = (white: number, black: number) => {
-      whiteFigureCount.value = white;  // Обновляем счётчик съеденных белых
-      blackFigureCount.value = black;  // Обновляем счётчик съеденных чёрных
+      whiteFigureCount.value = white;
+      blackFigureCount.value = black;
     };
 
     // 5. Сбрасываем счётчики
     resetCounts();
-
   };
 
+  // ========== ЖИЗНЕННЫЙ ЦИКЛ ==========
+  onMounted(() => {
+    startGame();
+  });
 </script>
 
 <style scoped>
-  /**
-   * Стили для основного контейнера с доской
-   */
-  #board {
-    width: min(80vh, 80vw);
-    height: min(80vh, 80vw);
-    border: 2px solid black;
-    position: relative;
-    justify-self: center;
-    display: flex;
-    flex-direction: column;
-  }
+.mobile-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
 
-  .rotate {
-    transform: rotate(180deg);
-  }
+.spacer {
+  flex: 0.5;
+}
+
+#board {
+  width: min(80vh, 80vw);
+  height: min(80vh, 80vw);
+  border: 2px solid black;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ========== ПЛАНШЕТЫ ========== */
+@media (min-width: 768px) and (max-width: 1200px) {
+  .spacer { flex: 0.4; }
+  #board { width: 85vw; height: 85vw; max-width: 550px; }
+}
+
+/* ========== БОЛЬШИЕ ТЕЛЕФОНЫ ========== */
+@media (min-width: 600px) and (max-width: 767px) {
+  .spacer { flex: 1; }
+  #board { width: 90vw; height: 90vw; max-width: 500px; }
+}
+
+/* ========== СРЕДНИЕ ТЕЛЕФОНЫ ========== */
+@media (min-width: 480px) and (max-width: 599px) {
+  .spacer { flex: 1.2; }
+  #board { width: 92vw; height: 92vw; max-width: 450px; }
+}
+
+/* ========== МАЛЕНЬКИЕ ТЕЛЕФОНЫ ========== */
+@media (max-width: 479px) {
+  .spacer { flex: 0.4; }
+  #board { width: 95vw; height: 95vw; max-width: 400px; }
+}
+
+.rotate {
+  transform: rotate(180deg);
+}
 </style>

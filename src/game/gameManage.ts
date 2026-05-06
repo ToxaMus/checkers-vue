@@ -11,85 +11,52 @@ import MoveValidator from "./moveValidator";
  * - инициализацию обработчиков событий.
  */
 export default class GameManager {
-  // ========== ПРИВАТНЫЕ СВОЙСТВА ==========
 
-  /** Обработчик клавиатурного ввода */
-  private keyboard: Keyboard;
+  /** Обработчик клавиатурного ввода (только для ПК) */
+  private keyboard: Keyboard | null = null;
 
-  /** Валидатор ходов (проверяет возможность ходов и управляет игровой логикой) */
+  /** Валидатор ходов */
   public validator: MoveValidator;
 
   /** Ссылка на игровую доску */
   private board: Board;
 
-  // ========== КОНСТРУКТОР ==========
+  /** Все чёрные клетки (кэш) */
+  private allBlackCells: Cell[] = [];
 
-  /**
-   * Конструктор GameManager.
-   * @param board - игровая доска, которой будет управлять менеджер
-   */
-  constructor(board: Board) {
-    // Инициализируем обработчик клавиатуры
-    this.keyboard = new Keyboard(board);
-
-    // Инициализируем валидатор ходов
+  constructor(board: Board, roteted: boolean) {
     this.validator = new MoveValidator(board);
-
-    // Сохраняем ссылку на доску
     this.board = board;
+    this.allBlackCells = this.board.getAllBlackCells();
 
-    // Запускаем обработчики ввода
+    // Клавиатура только для ПК (нет тач-событий)
+     this.keyboard = new Keyboard(board, roteted);
+
+
     this.start();
   }
 
-  // ========== ПУБЛИЧНЫЕ МЕТОДЫ ==========
-
-  /**
-   * Запускает обработчики пользовательского ввода.
-   * Настраивает прослушивание событий клавиатуры и мыши.
-   */
   public start(): void {
-    // ===== ОБРАБОТКА КЛАВИАТУРЫ =====
+    // ===== КЛАВИАТУРА ТОЛЬКО ДЛЯ ПК =====
     document.addEventListener('keydown', (e) => {
-      // Получаем клетку, на которую указывает текущая позиция курсора (от Keyboard)
-      const cell = this.keyboard.input(e.key);
-
-      // Если нажата клавиша Enter и есть выбранная клетка
+      const cell = this.keyboard!.input(e.key);
       if (e.key === 'Enter' && cell) {
         this.onSelectCell(cell);
       }
     });
 
-    // ===== ОБРАБОТКА МЫШИ =====
-    // Настраиваем callback для всех чёрных клеток доски
+
+    // ===== МЫШЬ/ТАЧ РАБОТАЮТ ВСЕГДА =====
     this.setupMouseHandler();
   }
 
-  // ========== ПРИВАТНЫЕ МЕТОДЫ ==========
-
-  /**
-   * Обработчик выбора клетки (вызывается при клике мыши или нажатии Enter).
-   * @param cell - выбранная клетка
-   */
   private onSelectCell(cell: Cell): void {
-    // Только чёрные клетки могут быть выбраны
     if (!cell.isBlack()) return;
-
-    // Передаём выбранную клетку валидатору для обработки хода
     this.validator.start(cell);
   }
 
-  /**
-   * Настраивает обработчик события мыши для всех игровых клеток.
-   * Проходит по всем чёрным клеткам доски и устанавливает callback.
-   */
   private setupMouseHandler(): void {
-    // Получаем все чёрные клетки (игровые) с доски
-    const blackCells = this.board.getAllBlackCells();
-
-    // Для каждой чёрной клетки устанавливаем обработчики
-    blackCells.forEach((cell) => {
-      // Обработчик клика: вызываем onSelectCell при клике на клетку
+    this.allBlackCells.forEach((cell) => {
       cell.setOnClick((clickedCell) => {
         this.onSelectCell(clickedCell);
       });

@@ -39,128 +39,82 @@
     blackCount: number
   }>()
 
-  /**
-   * ПРИМЕЧАНИЕ: Этот компонент является "глупым" (presentational)
-   * Он только отображает данные и не содержит логики
-   * Все данные приходят от родительского компонента через пропсы
-   */
 </script>
 
 <style scoped>
-/**
- * Основная панель счётчиков
- * Стилизована под игровой интерфейс с тёмным фоном и закруглёнными углами
- */
 .meter-panel {
-  /* ===== РАЗМЕРЫ И ПОЗИЦИОНИРОВАНИЕ ===== */
-  width: 560px;           /* Стандартная ширина доски 8x8 с клетками 70x70 */
-  height: 80px;           /* Фиксированная высота панели */
-
-  /* Центрирование относительно доски */
-  margin: 0 auto;         /* Горизонтальное центрирование */
-  margin-top: 20px;       /* Отступ сверху от доски */
-
-  /* ===== FLEX РАЗМЕТКА ===== */
+  width: 560px;
+  height: 80px;
+  margin: 0 auto;
+  margin-top: 20px;
   display: flex;
-  justify-content: space-between; /* Растягиваем контейнеры по краям (белые слева, чёрные справа) */
-  align-items: center;            /* Вертикальное центрирование содержимого */
-
-  /* ===== ОФОРМЛЕНИЕ ===== */
-  background-color: #595f63;      /* Тёмно-серый фон как у игровой панели */
-  border-radius: 8px;             /* Скруглённые углы */
-  padding: 0 20px;                /* Внутренние отступы слева и справа */
-  box-sizing: border-box;         /* Учитываем padding в ширине */
+  justify-content: space-between;
+  align-items: center;
+  background-color: #595f63;
+  border-radius: 8px;
+  padding: 0 20px;
+  box-sizing: border-box;
 }
 
-/**
- * Контейнер для каждого счётчика (белый и чёрный)
- * Содержит число и кружок-шашку
- */
 .container {
   display: flex;
-  align-items: center;    /* Центрируем число и шашку по вертикали */
-  gap: 15px;              /* Расстояние между числом и шашкой */
-  padding: 10px 20px;     /* Внутренние отступы */
-  background-color: rgba(0, 0, 0, 0.2); /* Полупрозрачный тёмный фон */
-  border-radius: 8px;     /* Скруглённые углы у контейнера */
+  align-items: center;
+  gap: 15px;
+  padding: 10px 20px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
 }
 
-/**
- * Текст с количеством съеденных фигур
- */
 p {
-  font-size: 28px;        /* Крупный шрифт для хорошей читаемости */
-  margin: 0;              /* Убираем стандартные отступы у <p> */
-  color: white;           /* Белый цвет для контраста на тёмном фоне */
-  font-weight: bold;      /* Жирное начертание */
-  font-family: monospace; /* Моноширинный шрифт для чёткого отображения цифр */
-  min-width: 60px;        /* Фиксированная минимальная ширина под цифры (чтобы панель не дёргалась) */
-  text-align: center;     /* Центрирование текста */
+  font-size: 28px;
+  margin: 0;
+  color: white;
+  font-weight: bold;
+  font-family: monospace;
+  min-width: 60px;
+  text-align: center;
 }
 
-/**
- * Общий стиль для кружка-шашки
- */
 .figure {
-  border-radius: 50%;          /* Идеальный круг */
-  height: 35px;                /* Высота кружка */
-  width: 35px;                 /* Ширина кружка */
-  border: 2px solid;           /* Обводка для контраста */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Лёгкая тень для объёма */
+  border-radius: 50%;
+  height: 35px;
+  width: 35px;
+  border: 2px solid;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/**
- * Стиль белой шашки
- * Градиент от светло-кремового до бежевого для имитации белого дерева/пластика
- */
-.white {
-  background: linear-gradient(135deg, #FFFFF0, #F5F5DC);
-  border-color: #cccccc;       /* Светло-серая обводка */
+/* ========== ПЛАНШЕТЫ ========== */
+@media (min-width: 768px) and (max-width: 1200px) {
+  .meter-panel { width: 80%; max-width: 600px; height: auto; padding: 15px 25px; }
+  .container { gap: 20px; padding: 12px 25px; }
+  p { font-size: 32px; min-width: 70px; }
+  .figure { height: 45px; width: 45px; }
 }
 
-/**
- * Стиль чёрной шашки
- * Градиент от тёмно-серого до серого для имитации чёрного дерева/пластика
- */
-.black {
-  background: linear-gradient(135deg, #D3D3D3, #A9A9A9);
-  border-color: #666666;       /* Тёмно-серая обводка */
+/* ========== БОЛЬШИЕ ТЕЛЕФОНЫ ========== */
+@media (min-width: 600px) and (max-width: 767px) {
+  .meter-panel { width: 85%; padding: 15px 20px; }
+  .container { gap: 18px; padding: 10px 20px; }
+  p { font-size: 30px; min-width: 65px; }
+  .figure { height: 42px; width: 42px; }
 }
 
-/* ===== АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ ===== */
-@media (max-width: 768px) {
-  /**
-   * На узких экранах (мобильные телефоны)
-   * Панель занимает 90% ширины, но не более 560px
-   */
-  .meter-panel {
-    width: 90%;          /* Относительная ширина на мобильных */
-    max-width: 560px;    /* Но не больше стандартной ширины */
-  }
-
-  /**
-   * Уменьшаем отступы и промежутки на мобильных
-   * Чтобы всё помещалось на маленьком экране
-   */
-  .container {
-    gap: 10px;           /* Меньше расстояние между числом и шашкой */
-    padding: 8px 15px;   /* Меньше внутренние отступы */
-  }
-
-  /**
-   * Уменьшаем размер шрифта на мобильных
-   */
-  p {
-    font-size: 24px;     /* Чуть меньше, но всё ещё читаемо */
-    min-width: 50px;     /* Чуть уже поле под цифры */
-  }
-
-  /**
-   * Уменьшаем размер шашек на мобильных
-   */
-  .figure {
-    height: 30px;        /* Меньше высота */
-    width: 30px;         /* Меньше ширина */
-  }
+/* ========== СРЕДНИЕ ТЕЛЕФОНЫ ========== */
+@media (min-width: 480px) and (max-width: 599px) {
+  .meter-panel { width: 90%; padding: 12px 15px; }
+  .container { gap: 15px; padding: 10px 18px; }
+  p { font-size: 28px; min-width: 60px; }
+  .figure { height: 40px; width: 40px; }
 }
+
+/* ========== МАЛЕНЬКИЕ ТЕЛЕФОНЫ ========== */
+@media (max-width: 479px) {
+  .meter-panel { width: 95%; padding: 10px 12px; margin-top: 15px; }
+  .container { gap: 12px; padding: 8px 15px; }
+  p { font-size: 24px; min-width: 50px; }
+  .figure { height: 35px; width: 35px; }
+}
+
+.white { background: linear-gradient(135deg, #FFFFF0, #F5F5DC);}
+.black { background: linear-gradient(135deg, #D3D3D3, #A9A9A9);}
 </style>

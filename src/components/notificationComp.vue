@@ -1,59 +1,66 @@
 <template>
+  <!-- Затемнённый фон -->
   <div class="overlay">
     <div class="window">
+      <!-- Сообщение о победителе -->
       <h2>{{ getMessage() }}</h2>
-      <button @click="restart">Новая партия</button>
+
+      <!-- Кнопка новой игры -->
+      <button
+        @click="restart"
+        @touchstart="onTouchStart"
+        @touchend="onTouchEnd"
+      >
+        Новая партия
+      </button>
     </div>
   </div>
 </template>
 
-
 <script setup lang="ts">
 import { Color } from './tsFiles/color';
 
-// Определяем входные параметры (props) компонента
-// winner - победитель (WHITE, BLACK или null при ничьей)
+// ========== ПРОПСЫ ==========
 const props = defineProps<{
-  winner: Color | null;
-}>()
+  winner: Color | null;  // Победитель: WHITE, BLACK или null (ничья)
+}>();
 
-// Определяем события, которые может генерировать компонент
-// restart - событие перезапуска игры (без параметров)
+// ========== СОБЫТИЯ ==========
 const emit = defineEmits<{
-  (event: 'restartGame'): void;
-}>()
+  (event: 'restartGame'): void;  // Перезапуск игры
+}>();
 
-/**
- * Формирует текстовое сообщение о результате игры
- * @returns строка с сообщением на русском языке
- */
+// ========== МЕТОДЫ ==========
+// Текст сообщения в зависимости от победителя
 const getMessage = (): string => {
-  let message = '';
+  if (props.winner == Color.WHITE) return 'Белые выиграли!';
+  if (props.winner == Color.BLACK) return 'Чёрные выиграли!';
+  return 'Ничья!';
+};
 
-  // Проверяем цвет победителя и возвращаем соответствующее сообщение
-  if (props.winner == Color.WHITE) {
-    message = 'Белые выиграли!';      // Победили белые
-  } else if (props.winner == Color.BLACK) {
-    message = 'Чёрные выиграли!';      // Победили чёрные
-  } else {
-    message = 'Ничья!';                // Ничья (winner === null)
-  }
-
-  return message;
-}
-
-/**
- * Обработчик нажатия на кнопку перезапуска
- * Генерирует событие restart для родительского компонента
- */
+// Перезапуск игры
 const restart = (): void => {
-  emit('restartGame');  // Отправляем событие родителю
+  emit('restartGame');
+};
+
+// ========== СЕНСОРНОЕ УПРАВЛЕНИЕ ==========
+// Эффект нажатия на кнопку
+const onTouchStart = (e: TouchEvent) => {
+  e.preventDefault();
+  const target = e.currentTarget as HTMLElement;
+  target.style.transform = 'scale(0.95)';
+};
+
+// Запуск новой игры после касания
+const onTouchEnd = (e: TouchEvent) => {
+  e.preventDefault();
+  const target = e.currentTarget as HTMLElement;
+  target.style.transform = '';
+  restart();
 };
 </script>
 
-<style scoped >
-/* Затемняющий фон */
-
+<style scoped>
 .overlay {
   position: fixed;
   top: 0;
@@ -93,11 +100,38 @@ const restart = (): void => {
   cursor: pointer;
   font-size: 14px;
   transition: background-color 0.2s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.window button:hover {
-  background-color: #45a049;
+/* ========== ПЛАНШЕТЫ ========== */
+@media (min-width: 768px) and (max-width: 1200px) {
+  .window { min-width: 350px; padding: 35px 30px; border-radius: 20px; }
+  .window h2 { font-size: 32px; margin-bottom: 20px; }
+  .window button { padding: 14px 35px; font-size: 22px; border-radius: 50px; }
 }
 
+/* ========== БОЛЬШИЕ ТЕЛЕФОНЫ ========== */
+@media (min-width: 600px) and (max-width: 767px) {
+  .window { min-width: 300px; padding: 30px 25px; }
+  .window h2 { font-size: 28px; }
+  .window button { padding: 12px 30px; font-size: 20px; }
+}
 
+/* ========== СРЕДНИЕ ТЕЛЕФОНЫ ========== */
+@media (min-width: 480px) and (max-width: 599px) {
+  .window { min-width: 280px; padding: 25px 20px; }
+  .window h2 { font-size: 24px; }
+  .window button { padding: 10px 25px; font-size: 18px; }
+}
+
+/* ========== МАЛЕНЬКИЕ ТЕЛЕФОНЫ ========== */
+@media (max-width: 479px) {
+  .window { min-width: 85vw; padding: 20px 15px; }
+  .window h2 { font-size: 22px; }
+  .window button { padding: 10px 22px; font-size: 16px; }
+}
+
+.window button:hover { background-color: #45a049; }
+.window button:active { transform: scale(0.95); }
 </style>
