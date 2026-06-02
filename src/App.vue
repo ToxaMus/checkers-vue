@@ -8,14 +8,14 @@
     <div class="panelColors">
       <div
         class="icon white-icon"
-        :class="{selected: selectColor === 'white'}"
+        :class="{selected: selectColor === Color.WHITE}"
         @click="selectedColor(Color.WHITE)"
         @touchstart="onTouchStart"
         @touchend="onTouchEnd(Color.WHITE)"
       ></div>
       <div
         class="icon black-icon"
-        :class="{selected: selectColor === 'black'}"
+        :class="{selected: selectColor === Color.BLACK}"
         @click="selectedColor(Color.BLACK)"
         @touchstart="onTouchStart"
         @touchend="onTouchEnd(Color.BLACK)"
@@ -24,7 +24,7 @@
 
     <!--
       Кнопка подтверждения выбора цвета
-      :disabled="!selectedColor" - блокируем кнопку, если цвет не выбран
+      :disabled="!selectColor" - блокируем кнопку, если цвет не выбран
       @click="handleClick" - при клике подтверждаем выбор и закрываем окно
     -->
     <button
@@ -36,14 +36,17 @@
     >
       Подтвердить
     </button>
-
   </div>
 
   <!--
     Передаём выбранный цвет в компонент игры
-    v-if="selectedColor && isClick" - показываем игру только когда цвет выбран и кнопка нажата
+    v-if="selectColor && gameStated" - показываем игру только когда цвет выбран и кнопка нажата
   -->
-  <CheckersGame v-if="selectColor && gameStated" :color="selectColor" @newGame="regestNewGame"/>
+  <CheckersGame
+    v-if="selectColor && gameStated"
+    :color="selectColor"
+    @newGame="regestNewGame"
+  />
 </template>
 
 <script setup lang="ts">
@@ -51,65 +54,116 @@ import { ref } from 'vue';
 import CheckersGame from './СheckersGame.vue'; // Обратите внимание на правильное имя файла
 import { Color } from './components/tsFiles/color';
 
-// Храним состояние: нажал ли пользователь на кнопку "Подтвердить"
-const isClick = ref(false);
-
-// Храним выбранный пользователем цвет (может быть Color или null если не выбран)
-const selectColor = ref<Color | null>(null);
-const gameStated = ref(false);
+// ========== СОСТОЯНИЯ ==========
 
 /**
- * Функция подтверждения выбора цвета
+ * Флаг: нажал ли пользователь на кнопку "Подтвердить"
+ * true - игра началась, false - показываем выбор цвета
+ */
+const isClick = ref(false);
+
+/**
+ * Выбранный пользователем цвет
+ * WHITE - белые, BLACK - чёрные, null - цвет не выбран
+ */
+const selectColor = ref<Color | null>(null);
+
+/**
+ * Флаг: запущена ли игра
+ * Нужен для пересоздания компонента при новой игре
+ */
+const gameStated = ref(false);
+
+// ========== МЕТОДЫ ==========
+
+/**
+ * Подтверждение выбора цвета и запуск игры
+ * Вызывается при клике на кнопку "Подтвердить"
  */
 const handleClick = () => {
   // Проверяем, что цвет выбран
-  if (selectColor.value) {
-    isClick.value = true; // Скрываем окно выбора цвета и показываем игру
-    gameStated.value = true;
+  if (selectColor.value !== null) {
+    isClick.value = true;      // Скрываем окно выбора
+    gameStated.value = true;   // Запускаем игру
   }
 };
 
 /**
- * Функция выбора цвета
- * @param color - выбранный цвет
+ * Выбор цвета (белые или чёрные)
+ * @param color - выбранный цвет (WHITE или BLACK)
  */
 const selectedColor = (color: Color) => {
   selectColor.value = color;
 };
 
+/**
+ * Обработчик перезапуска игры после окончания
+ * Сбрасывает все флаги, чтобы показать выбор цвета снова
+ */
 const regestNewGame = () => {
-  isClick.value = false;
-  selectColor.value = null;
-  gameStated.value = false;
-}
-
-const onTouchStart = (event: TouchEvent) => {
-  event.preventDefault();
-  const touch = event.currentTarget as HTMLElement;
-  touch.style.transform = 'scale(0.9)';
-}
-
-const onTouchEnd = (color: Color) => {
-  const divs = document.querySelectorAll('.icon')
-  divs.forEach(div => (div as HTMLElement).style.transform = '');
-  selectedColor(color);
+  isClick.value = false;       // Показываем окно выбора
+  selectColor.value = null;    // Сбрасываем выбранный цвет
+  gameStated.value = false;    // Останавливаем игру
 };
 
+// ========== ОБРАБОТЧИКИ ТАЧ-СОБЫТИЙ (для мобильных устройств) ==========
+
+/**
+ * Визуальный эффект нажатия на иконку цвета
+ * Уменьшает размер при касании
+ */
+const onTouchStart = (event: TouchEvent) => {
+  event.preventDefault();                    // Отменяем стандартное поведение
+  const touch = event.currentTarget as HTMLElement;
+  touch.style.transform = 'scale(0.9)';     // Уменьшаем при нажатии
+};
+
+/**
+ * Завершение касания иконки цвета
+ * Сбрасывает размер и выбирает цвет
+ * @param color - выбранный цвет
+ */
+const onTouchEnd = (color: Color) => {
+  // Сбрасываем трансформацию для всех иконок
+  const divs = document.querySelectorAll('.icon');
+  divs.forEach(div => (div as HTMLElement).style.transform = '');
+
+  selectedColor(color);  // Выбираем цвет
+};
+
+/**
+ * Визуальный эффект нажатия на кнопку
+ * Уменьшает кнопку при касании (если она активна)
+ */
 const onTouchStartBtn = (event: TouchEvent) => {
   event.preventDefault();
   const touch = event.currentTarget as HTMLElement;
 
-  if (!(touch as HTMLButtonElement).disabled) touch.style.transform = 'scale(0.9)';
+  // Уменьшаем только если кнопка не заблокирована
+  if (!(touch as HTMLButtonElement).disabled) {
+    touch.style.transform = 'scale(0.9)';
+  }
 };
 
+/**
+ * Завершение касания кнопки
+ * Сбрасывает размер и подтверждает выбор (если кнопка активна)
+ */
 const onTouchEndBtn = (e: TouchEvent) => {
   const touch = e.currentTarget as HTMLElement;
-  touch.style.transform = '';
+  touch.style.transform = '';  // Сбрасываем размер
 
-  if (!(touch as HTMLButtonElement).disabled) handleClick();
+  // Подтверждаем выбор только если кнопка не заблокирована
+  if (!(touch as HTMLButtonElement).disabled) {
+    handleClick();
+  }
+};
 
-}
-
+// ========== ЭКСПОРТ ДЛЯ ШАБЛОНА ==========
+// Делаем Color доступным в шаблоне
+defineExpose({
+  Color
+});
 </script>
 
 <style scoped>
@@ -302,7 +356,7 @@ const onTouchEndBtn = (e: TouchEvent) => {
   }
 }
 
-/* Остальные стили (hover, active, selected и т.д.) остаются без изменений */
+/* ========== ЭФФЕКТЫ ПРИ НАВЕДЕНИИ ========== */
 .icon:hover {
   transform: scale(1.1);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
@@ -312,12 +366,14 @@ const onTouchEndBtn = (e: TouchEvent) => {
   transform: scale(0.95);
 }
 
+/* ========== СТИЛЬ ДЛЯ ВЫБРАННОГО ЦВЕТА ========== */
 .icon.selected {
   border: 3px solid #ff6b6b;
   box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.3);
   transform: scale(1.05);
 }
 
+/* ========== ЦВЕТА ИКОНОК ========== */
 .white-icon {
   background: radial-gradient(circle at 35% 35%, #ffffff, #e0e0e0);
   border-color: #ccc;
@@ -328,6 +384,7 @@ const onTouchEndBtn = (e: TouchEvent) => {
   border-color: #555;
 }
 
+/* ========== ЭФФЕКТЫ КНОПКИ ========== */
 .btn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
@@ -337,10 +394,27 @@ const onTouchEndBtn = (e: TouchEvent) => {
   transform: translateY(1px);
 }
 
+/* ========== СТИЛЬ ДЛЯ ЗАБЛОКИРОВАННОЙ КНОПКИ ========== */
 .btn:disabled {
   background: linear-gradient(135deg, #cccccc 0%, #999999 100%);
   cursor: not-allowed;
   opacity: 0.6;
   transform: none;
+}
+
+/* ========== АНИМАЦИЯ ПОЯВЛЕНИЯ ========== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.notification {
+  animation: fadeIn 0.3s ease;
 }
 </style>
