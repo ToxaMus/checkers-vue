@@ -1,346 +1,202 @@
 <template>
-  <!--
-    Компонент выбора цвета перед началом игры
-    v-if="!isClick" - показываем, пока пользователь не выбрал цвет
-  -->
-  <div class="notification" v-if="!isClick">
-    <h2>Выберите цвет</h2>
-    <div class="panelColors">
-      <div
-        class="icon white-icon"
-        :class="{selected: selectColor === 'white'}"
-        @click="selectedColor(Color.WHITE)"
-        @touchstart="onTouchStart"
-        @touchend="onTouchEnd(Color.WHITE)"
-      ></div>
-      <div
-        class="icon black-icon"
-        :class="{selected: selectColor === 'black'}"
-        @click="selectedColor(Color.BLACK)"
-        @touchstart="onTouchStart"
-        @touchend="onTouchEnd(Color.BLACK)"
-      ></div>
+  <GameChoiceComp @send-data="selectColor" v-if="!playerColor" />
+
+  <div v-else>
+    <div class="mobile-container">
+      <div class="spacer"></div> <!-- Пустое пространство сверху -->
+
+      <div id="board" :class="{ rotate: isRotate() }">
+        <BoardComp :board="board" :colorPlayer="playerColor" />
+      </div>
+
+      <meterPanel :whiteCount="whiteFigureCount" :blackCount="blackFigureCount" />
     </div>
 
-    <!--
-      Кнопка подтверждения выбора цвета
-      :disabled="!selectedColor" - блокируем кнопку, если цвет не выбран
-      @click="handleClick" - при клике подтверждаем выбор и закрываем окно
-    -->
-    <button
-      class="btn"
-      :disabled="!selectColor"
-      @click="handleClick"
-      @touchstart="onTouchStartBtn"
-      @touchend="onTouchEndBtn"
-    >
-      Подтвердить
-    </button>
-
+    <notificationComp v-if="gameOver" :winner="winner" @restartGame="restartGame" />
   </div>
-
-  <!--
-    Передаём выбранный цвет в компонент игры
-    v-if="selectedColor && isClick" - показываем игру только когда цвет выбран и кнопка нажата
-  -->
-  <CheckersGame v-if="selectColor && gameStated" :color="selectColor" @newGame="regestNewGame"/>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import CheckersGame from './СheckersGame.vue'; // Обратите внимание на правильное имя файла
+import { Board } from './components/tsFiles/board';
+import BoardComp from './components/boardComp.vue';
+import GameManager from './game/gameManage';
 import { Color } from './components/tsFiles/color';
+import notificationComp from './components/notificationComp.vue';
+import meterPanel from './components/meterPanel.vue';
+import GameChoiceComp from './components/GameChoiceComp.vue';
 
-// Храним состояние: нажал ли пользователь на кнопку "Подтвердить"
-const isClick = ref(false);
-
+// ========== СОСТОЯНИЕ ==========
 // Храним выбранный пользователем цвет (может быть Color или null если не выбран)
-const selectColor = ref<Color | null>(null);
-const gameStated = ref(false);
+const playerColor = ref<Color | null>(null);
+
+/** Доска игры (реактивная, Vue отслеживает изменения) */
+const board = ref<Board>(new Board());
+
+/** Победитель игры (при gameOver === true) */
+const winner = ref<Color | null>(null);
+
+/** Количество съеденных белых фигур */
+const whiteFigureCount = ref(0);
+
+/** Количество съеденных чёрных фигур */
+const blackFigureCount = ref(0);
+
+/** Флаг окончания игры */
+const gameOver = ref(false);
+
+/** Менеджер игры (управление с клавиатуры и валидация ходов) */
+let gameManager: GameManager | null;
+
+// ========== МЕТОДЫ ==========
+/** Обработчик выбора цвета пользователя из компонента GameChoiceComp  */
+const selectColor = (color: Color) => {
+  playerColor.value = color;
+  startGame();
+};
+
 
 /**
- * Функция подтверждения выбора цвета
+ * Нужно ли повернуть доску?
+ * Чёрные игроки видят доску повёрнутой на 180°
  */
-const handleClick = () => {
-  // Проверяем, что цвет выбран
-  if (selectColor.value) {
-    isClick.value = true; // Скрываем окно выбора цвета и показываем игру
-    gameStated.value = true;
-  }
+const isRotate = () => {
+  return playerColor.value === Color.BLACK;
 };
 
 /**
- * Функция выбора цвета
- * @param color - выбранный цвет
+ * Создаёт новую доску с фигурами в начальной позиции
  */
-const selectedColor = (color: Color) => {
-  selectColor.value = color;
+const createNewBoard = () => {
+  const newBoard = new Board();
+  newBoard.initBoard();  // Расставляем фигуры
+  return newBoard;
 };
 
-const regestNewGame = () => {
-  isClick.value = false;
-  selectColor.value = null;
-  gameStated.value = false;
-}
-
-const onTouchStart = (event: TouchEvent) => {
-  event.preventDefault();
-  const touch = event.currentTarget as HTMLElement;
-  touch.style.transform = 'scale(0.9)';
-}
-
-const onTouchEnd = (color: Color) => {
-  const divs = document.querySelectorAll('.icon')
-  divs.forEach(div => (div as HTMLElement).style.transform = '');
-  selectedColor(color);
+/**
+ * Сбрасывает счётчики съеденных фигур
+ */
+const resetCounts = () => {
+  whiteFigureCount.value = 0;
+  blackFigureCount.value = 0;
 };
 
-const onTouchStartBtn = (event: TouchEvent) => {
-  event.preventDefault();
-  const touch = event.currentTarget as HTMLElement;
+/**
+ * Запускает новую игру
+ */
+const startGame = () => {
+  // 1. Создаём новую доску
+  const newBoard = createNewBoard();
+  board.value = newBoard;
 
-  if (!(touch as HTMLButtonElement).disabled) touch.style.transform = 'scale(0.9)';
+  // 2. Создаём менеджер игры (передаём доску и флаг поворота)
+  gameManager = new GameManager(board.value, isRotate());
+
+  // 3. Настраиваем колбэк окончания игры
+  gameManager.validator.onGameEnd = (winning: Color | null) => {
+    winner.value = winning;
+    gameOver.value = true;
+  };
+
+  // 4. Настраиваем колбэк обновления счётчиков
+  gameManager.validator.onUpdateCounts = (white: number, black: number) => {
+    whiteFigureCount.value = white;
+    blackFigureCount.value = black;
+  };
+
+  // 5. Сбрасываем счётчики
+  resetCounts();
 };
 
-const onTouchEndBtn = (e: TouchEvent) => {
-  const touch = e.currentTarget as HTMLElement;
-  touch.style.transform = '';
+// Перезапуск игры
+const restartGame = () => {
+  // 1. Сбрасываем все игровые флаги
+  gameOver.value = false;
+  winner.value = null;
+  whiteFigureCount.value = 0;
+  blackFigureCount.value = 0;
 
-  if (!(touch as HTMLButtonElement).disabled) handleClick();
-
-}
-
+  // 2. Уничтожаем старый менеджер (чтобы избежать утечек)
+  gameManager = null;
+  
+  // 3. Сбрасываем цвет игрока – это покажет окно выбора
+  playerColor.value = null;
+};
 </script>
 
 <style scoped>
-/* ========== БАЗОВЫЕ СТИЛИ (ПК) ========== */
-.notification {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+.mobile-container {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  min-width: 350px;
-  padding: 40px 30px;
-  background: linear-gradient(135deg, #fff5e6 0%, #ffe0cc 100%);
-  border-radius: 30px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-  text-align: center;
+  min-height: 100vh;
 }
 
-.notification h2 {
-  margin: 0 0 25px 0;
-  color: #333;
-  font-size: 28px;
+.spacer {
+  flex: 0.5;
 }
 
-.panelColors {
+#board {
+  width: min(80vh, 80vw);
+  height: min(80vh, 80vw);
+  border: 2px solid black;
+  margin: 0 auto;
   display: flex;
-  gap: 40px;
-  justify-content: center;
-  margin: 25px 0;
+  flex-direction: column;
 }
 
-.icon {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 3px solid transparent;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.btn {
-  padding: 15px 40px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 60px;
-  cursor: pointer;
-  font-size: 20px;
-  font-weight: bold;
-  transition: all 0.3s ease;
-  margin-top: 15px;
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* ========== ДЛЯ ТЕЛЕФОНОВ (до 912px) ========== */
-@media (max-width: 912px) {
-  .notification {
-    min-width: 85vw;
-    padding: 45px 30px;
-    border-radius: 40px;
+/* ========== ПЛАНШЕТЫ ========== */
+@media (min-width: 768px) and (max-width: 1200px) {
+  .spacer {
+    flex: 0.4;
   }
 
-  .notification h2 {
-    font-size: 42px;
-    margin-bottom: 40px;
-  }
-
-  .panelColors {
-    gap: 70px;
-    margin: 40px 0;
-  }
-
-  .icon {
-    width: 160px;
-    height: 160px;
-  }
-
-  .btn {
-    padding: 22px 60px;
-    font-size: 32px;
-    margin-top: 30px;
-    border-radius: 80px;
+  #board {
+    width: 85vw;
+    height: 85vw;
+    max-width: 550px;
   }
 }
 
-/* ========== ДЛЯ СРЕДНИХ ТЕЛЕФОНОВ (600-800px) ========== */
-@media (min-width: 600px) and (max-width: 800px) {
-  .notification h2 {
-    font-size: 38px;
+/* ========== БОЛЬШИЕ ТЕЛЕФОНЫ ========== */
+@media (min-width: 600px) and (max-width: 767px) {
+  .spacer {
+    flex: 1;
   }
 
-  .icon {
-    width: 140px;
-    height: 140px;
-  }
-
-  .btn {
-    font-size: 28px;
-    padding: 20px 55px;
+  #board {
+    width: 90vw;
+    height: 90vw;
+    max-width: 500px;
   }
 }
 
-/* ========== ДЛЯ МАЛЕНЬКИХ ТЕЛЕФОНОВ (до 500px) ========== */
-@media (max-width: 500px) {
-  .notification {
-    min-width: 90vw;
-    padding: 35px 20px;
-    border-radius: 35px;
+/* ========== СРЕДНИЕ ТЕЛЕФОНЫ ========== */
+@media (min-width: 480px) and (max-width: 599px) {
+  .spacer {
+    flex: 1.2;
   }
 
-  .notification h2 {
-    font-size: 32px;
-    margin-bottom: 30px;
-  }
-
-  .panelColors {
-    gap: 45px;
-    margin: 30px 0;
-  }
-
-  .icon {
-    width: 120px;
-    height: 120px;
-  }
-
-  .btn {
-    padding: 18px 50px;
-    font-size: 26px;
-    margin-top: 25px;
+  #board {
+    width: 92vw;
+    height: 92vw;
+    max-width: 450px;
   }
 }
 
-/* ========== ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ (до 380px) ========== */
-@media (max-width: 380px) {
-  .notification {
-    min-width: 95vw;
-    padding: 30px 15px;
-    border-radius: 30px;
+/* ========== МАЛЕНЬКИЕ ТЕЛЕФОНЫ ========== */
+@media (max-width: 479px) {
+  .spacer {
+    flex: 0.4;
   }
 
-  .notification h2 {
-    font-size: 28px;
-    margin-bottom: 25px;
-  }
-
-  .panelColors {
-    gap: 35px;
-    margin: 25px 0;
-  }
-
-  .icon {
-    width: 100px;
-    height: 100px;
-  }
-
-  .btn {
-    padding: 16px 45px;
-    font-size: 22px;
+  #board {
+    width: 95vw;
+    height: 95vw;
+    max-width: 400px;
   }
 }
 
-/* ========== ДЛЯ ПЛАНШЕТОВ (800-1200px) ========== */
-@media (min-width: 800px) and (max-width: 1200px) {
-  .notification {
-    min-width: 500px;
-    padding: 50px 40px;
-  }
-
-  .notification h2 {
-    font-size: 36px;
-  }
-
-  .icon {
-    width: 130px;
-    height: 130px;
-  }
-
-  .btn {
-    padding: 18px 50px;
-    font-size: 24px;
-  }
-}
-
-/* Остальные стили (hover, active, selected и т.д.) остаются без изменений */
-.icon:hover {
-  transform: scale(1.1);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-}
-
-.icon:active {
-  transform: scale(0.95);
-}
-
-.icon.selected {
-  border: 3px solid #ff6b6b;
-  box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.3);
-  transform: scale(1.05);
-}
-
-.white-icon {
-  background: radial-gradient(circle at 35% 35%, #ffffff, #e0e0e0);
-  border-color: #ccc;
-}
-
-.black-icon {
-  background: radial-gradient(circle at 35% 35%, #444444, #111111);
-  border-color: #555;
-}
-
-.btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
-}
-
-.btn:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.btn:disabled {
-  background: linear-gradient(135deg, #cccccc 0%, #999999 100%);
-  cursor: not-allowed;
-  opacity: 0.6;
-  transform: none;
+.rotate {
+  transform: rotate(180deg);
 }
 </style>
