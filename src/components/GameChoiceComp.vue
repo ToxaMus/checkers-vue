@@ -8,14 +8,14 @@
     <div class="panelColors">
       <div
         class="icon white-icon"
-        :class="{selected: selectColor === 'white'}"
+        :class="{selected: selectColor === Color.WHITE}"
         @click="selectedColor(Color.WHITE)"
         @touchstart="onTouchStart"
         @touchend="onTouchEnd(Color.WHITE)"
       ></div>
       <div
         class="icon black-icon"
-        :class="{selected: selectColor === 'black'}"
+        :class="{selected: selectColor === Color.BLACK}"
         @click="selectedColor(Color.BLACK)"
         @touchstart="onTouchStart"
         @touchend="onTouchEnd(Color.BLACK)"
@@ -23,13 +23,24 @@
     </div>
 
     <!--
+      Кнопки выбора режима игры
+    -->
+    <div class="radioBtn">
+      <input type="radio" id="gameAI" value="AI" v-model="gameMode">
+      <label for="gameAI">Игра с ИИ</label>
+
+      <input type="radio" id="gamePlayer" value="Player" v-model="gameMode">
+      <label for="gamePlayer">Игра с Игроком</label>
+    </div>
+ 
+    <!--
       Кнопка подтверждения выбора цвета
-      :disabled="!selectedColor" - блокируем кнопку, если цвет не выбран
+      :disabled="!(selectColor && gameMode)" - блокируем кнопку, если цвет и режим игры не выбраны
       @click="handleClick" - при клике подтверждаем выбор и закрываем окно
     -->
     <button
       class="btn"
-      :disabled="!selectColor"
+    :disabled="!(selectColor && gameMode)"
       @click="handleClick"
       @touchstart="onTouchStartBtn"
       @touchend="onTouchEndBtn"
@@ -51,18 +62,25 @@ const isClick = ref(false);
 
 // Храним выбранный пользователем цвет (может быть Color или null если не выбран)
 const selectColor = ref<Color | null>(null);
-const gameStated = ref(false);
 
-const emit = defineEmits(['send-data']);
+// Храним выбранный режим игры
+const gameMode = ref<'AI' | 'Player' | null>(null);
+
+const emit = defineEmits<{
+  (e: 'send-data', payload: { color: Color, mode: 'AI' | 'Player' }): void;
+}>();
 
 /**
  * Функция подтверждения выбора цвета
  */
 const handleClick = () => {
   // Проверяем, что цвет выбран
-  if (selectColor.value) {
+  if (selectColor.value && gameMode.value) {
    // Если выбран, то отправляем выбранный цвет в компонент игры
-   emit('send-data', selectColor.value);
+   emit('send-data', {
+    color: selectColor.value,
+    mode: gameMode.value
+   });
   }
 };
 
@@ -73,12 +91,6 @@ const handleClick = () => {
 const selectedColor = (color: Color) => {
   selectColor.value = color;
 };
-
-const regestNewGame = () => {
-  isClick.value = false;
-  selectColor.value = null;
-  gameStated.value = false;
-}
 
 const onTouchStart = (event: TouchEvent) => {
   event.preventDefault();
@@ -168,6 +180,33 @@ const onTouchEndBtn = (e: TouchEvent) => {
   box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+}
+
+.radioBtn {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin: 15px 0;
+  width: 100%;
+}
+
+.radioBtn input[type="radio"] {
+  display: none; /* скрываем стандартные */
+}
+
+.radioBtn label {
+  padding: 10px 20px;
+  border: 2px solid #ccc;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.radioBtn input[type="radio"]:checked + label {
+  border-color: #667eea;
+  background: #667eea;
+  color: white;
 }
 
 /* ========== ДЛЯ ТЕЛЕФОНОВ (до 912px) ========== */
